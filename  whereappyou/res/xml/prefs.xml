@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+ <PreferenceCategory
+   android:summary="WhereAppYou Settings"
+   android:title="Location Prefereneces" >
+   
+  <CheckBoxPreference
+     android:key="usePassive"
+     android:summary="On/Off"
+     android:title="Use Cell Mode" />
+
+  <CheckBoxPreference
+     android:key="useNetwork"
+     android:summary="On/Off"
+     android:title="Use Network Mode" />
+  
+  <EditTextPreference
+     android:key="locnMinTime"
+     android:summary="Enter Min Loc Timeout"
+     android:title="Min Location Timeout" />
+  
+  <EditTextPreference
+     android:key="locMinDistance"
+     android:summary="Enter Min Loc Distance"
+     android:title="Min Location Distance" />
+ </PreferenceCategory>
+
+ <PreferenceCategory
+   android:summary="WhereAppYou Settings"
+   android:title="Other" >
+  <CheckBoxPreference
+     android:key="onlyFavs"
+     android:summary="On/Off"
+     android:title="Answer ONLY to fav." />
+
+  <CheckBoxPreference
+     android:key="incognitoMode"
+     android:summary="On/Off"
+     android:title="Incognito Mode" />
+
+  <CheckBoxPreference
+     android:key="voiceNotifications"
+     android:summary="On/Off"
+     android:title="Voice Notifications" />
+  
+  <!-- ListPreference
+     android:entries="@array/listOptions"
+     android:entryValues="@array/listValues"
+     android:key="listpref"
+     android:summary="List preference example"
+     android:title="List preference" /-->
+ </PreferenceCategory>
+</PreferenceScreen>
