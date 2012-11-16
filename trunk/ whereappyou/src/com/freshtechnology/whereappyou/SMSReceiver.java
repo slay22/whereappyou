@@ -12,6 +12,13 @@ public class SMSReceiver extends BroadcastReceiver
     @Override
     public void onReceive(Context context, Intent intent) 
     {
+    	//we dont need this
+//       	 if(intent.getAction().equals("android.intent.action.BOOT_COMPLETED"))
+//       	 {
+//             Intent service = new Intent(context, WhereAppYouService.class);
+//             context.startService(service);		                    
+//       	 } 
+    		
     	 if(intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED"))
     	 {    	
 	        //---get the SMS message passed in---
