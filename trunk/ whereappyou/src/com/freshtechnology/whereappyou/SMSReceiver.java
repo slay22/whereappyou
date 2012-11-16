@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
 //import android.widget.Toast;
+import android.util.Log;
  
 public class SMSReceiver extends BroadcastReceiver 
 {
@@ -46,6 +47,8 @@ public class SMSReceiver extends BroadcastReceiver
 
 		                    //TODO : Logging here requests?
 		                    
+			        		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": SMSReceiver got a Message.");
+		                    
 		                    Intent service = new Intent(context, WhereAppYouService.class);
 		                    service.putExtra("PhoneNumber", msgs[i].getOriginatingAddress());
 		                    service.putExtra("PayLoad", payLoad);
@@ -55,7 +58,7 @@ public class SMSReceiver extends BroadcastReceiver
 	        	}
 	        	catch(Exception e)
 	        	{
-        			// Log.d("Exception caught",e.getMessage());
+	        		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": SMSReceiver " + e.getLocalizedMessage());
 	        	}
 	        }
     	 }
