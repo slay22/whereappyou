@@ -1,8 +1,11 @@
 package com.freshtechnology.whereappyou;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.http.impl.io.HttpRequestParser;
 //import java.util.concurrent.Executors;
 
 import android.app.Notification;
@@ -47,15 +50,18 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	   private boolean m_IncognitoMode = false;
 	   private boolean m_VoiceNotifications = false;
 	   private boolean m_OnlyFavourites = true;
-	   private TaskTest m_processSMS = null; 
 	   
-	   private long m_MinTime = 5 * 60 * 1000; //5 minutes default
+	   private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
+	   private final static float DEFAULT_MIN_DISTANCE  = 10;
+	   private long m_MinTime = 0;
 	   private float m_MinDistance = 10;
 	   
 //	   private WhereAppYouApplication m_Application = null;
 	   private SharedPreferences m_Preferences = null;
 	   private NotificationManager m_NotificationManager = null;
 //	   private Builder m_builder = null;
+	   
+	   private List<TaskProcessSms> m_TaskList;
    
 	   
 	   public IBinder onBind(Intent intent) 
@@ -70,6 +76,8 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	        
 	        try 
 	        {
+	        	m_TaskList = new ArrayList<TaskProcessSms>(); 
+	        	
 		        //m_Application = (WhereAppYouApplication)getApplication();
 	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 	        	m_Preferences.registerOnSharedPreferenceChangeListener(this);
@@ -81,8 +89,8 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
                 m_VoiceNotifications = m_Preferences.getBoolean("voiceNotifications", false);
                 m_OnlyFavourites = m_Preferences.getBoolean("onlyFavs", true);
                 
-         	   	m_MinTime = m_Preferences.getLong("locnMinTime", 5 * 60 * 1000); 
-         	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", 10);
+         	   	m_MinTime = m_Preferences.getLong("locnMinTime", DEFAULT_MIN_TIME); 
+         	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", DEFAULT_MIN_DISTANCE);
 	        } 
 	        catch (Exception e) 
 	        {
@@ -112,13 +120,13 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	        	boolean answer = true;
 	        	if (m_OnlyFavourites)
 	        	{
-	        		answer = isFavContactFav(m_Contact);
+	        		answer = isFavContact(m_Contact);
 	        	}
 	        	
 	        	if (answer)
 	        	{
 		        	processData();
-		        	signalTask();
+		        	signalTasks();
 	        	}
 	        	
 //	        	CountDownTimer procData = new CountDownTimer(21000, 7000) 
@@ -160,11 +168,13 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	        return START_STICKY;
 	   }
 
-	@Override
+	   @Override
 	   public void onDestroy() 
 	   {
 	        Log.v("WhereAppYouService", System.currentTimeMillis() + ": WhereAppYouService dead.");
 
+	        clearTasks();
+	        
 	        m_LocManager.removeUpdates(this);
         	m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
         	m_Preferences = null;
@@ -172,14 +182,31 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	        stopForeground(true);
 	        
 	        super.onDestroy();
-	   } 
+	   }
+
+		private void clearTasks() 
+		{
+			if (null != m_TaskList && !m_TaskList.isEmpty())
+			{
+				for (TaskProcessSms _Task : m_TaskList)
+				{
+					_Task.cancel(true);
+				}
+				m_TaskList.clear();
+				m_TaskList = null;
+			}
+		} 
 	   
        @Override
        protected void finalize() throws Throwable 
        {
-	       if(m_LocManager != null)
+    	   clearTasks();
+    	   
+	       if (null != m_LocManager)
+	       {
 	    	   m_LocManager.removeUpdates(this);
-
+	       }
+	       
 	       if (null != m_Preferences)
 	       {
 	    	   m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
@@ -263,7 +290,7 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 //           m_NotificationManager.notify(1, m_builder.build());
        }
     
-      private class TaskTest extends AsyncTask<Object, Object, Boolean>
+      private class TaskProcessSms extends AsyncTask<Object, Object, Boolean>
       {
     	  private StringBuilder message = null;
     	  private String ToWhom = "";
@@ -289,7 +316,7 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 					try 
 					{
 						Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Waiting");
-						wait();
+						wait(10000);
 					} catch (InterruptedException e) 
 					{
 						// TODO Auto-generated catch block
@@ -310,7 +337,7 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 				{
 					message.append("Hi ");
 					message.append(ToWhom);
-					message.append("\n möglicherweise der Arschloch, hat das GPS ausgeschaltet, so kann ich dir nicht sagen, wo er ist");			   
+					message.append("\n möglicherweise der GPS-Empfänger ausgeschaltet ist, deshalb kein Ortung angezeigt wird. Bitte später erneut versuchen.");
 				}
 				else
 				{
@@ -322,7 +349,7 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 					uri.append(String.valueOf(lat));
 					uri.append(",");
 					uri.append(String.valueOf(lon));					
-					uri.append("+(Here)&z=14&ll=");
+					uri.append("(Here)&z=14&ll=");
 					uri.append(String.valueOf(lat));
 					uri.append(",");
 					uri.append(String.valueOf(lon));					
@@ -356,8 +383,8 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 						}
 					}
 					
-					//message.append("\n");
-					message.append(uri.toString());
+					message.append(" ");
+					message.append(URLEncoder.encode(uri.toString(), "UTF-8"));
 				}
 				
 				Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Message built");
@@ -370,24 +397,6 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 			}
 		
 			return result;
-		}
-
-		private String getDistanceString(String Lat, String Lon) 
-		{
-			Location pointLocation = new Location("POINT_LOCATION");
-			pointLocation.setLatitude(Float.valueOf(Lat));
-			pointLocation.setLongitude(Float.valueOf(Lon));
-			
-			float distance = m_Location.distanceTo(pointLocation);
-			
-			String unit = " m";
-			if (distance > 1000)
-			{
-				distance = Math.abs(distance / 1000); 
-				unit = " km";
-			}
-			
-			return String.valueOf(distance) + unit;
 		}
 		
         @Override
@@ -432,10 +441,30 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
         }
       }
       
+      private String getDistanceString(String Lat, String Lon) 
+      {
+    	  Location pointLocation = new Location("POINT_LOCATION");
+    	  pointLocation.setLatitude(Float.valueOf(Lat));
+    	  pointLocation.setLongitude(Float.valueOf(Lon));
+		
+    	  float distance = m_Location.distanceTo(pointLocation);
+		
+    	  String unit = " m";
+    	  if (distance > 1000)
+    	  {
+    		  distance = Math.abs(distance / 1000); 
+    		  unit = " km";
+    	  }
+		
+    	  return String.valueOf(distance) + unit;
+      }
+      
       public String getAddress(double latitude, double longitude)
       {
+    	  String result = "";
           List<Address> address = null;
           Geocoder gc = new Geocoder(getBaseContext());
+          
           try 
           {
               address = gc.getFromLocation(latitude, longitude, 1);
@@ -443,103 +472,40 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
           catch (IOException e) 
           {
               Log.v("WhereAppYouService", System.currentTimeMillis() + ": getAddress unable to get address");              
-              return "";
           }
 
           if (address == null || address.size() == 0) {
               Log.v("WhereAppYouService", System.currentTimeMillis() + ": getAddress unable to parse address");              
-              return "";
+              result = "";
           }
-
-          Address a = address.get(0);
-
-          StringBuilder b = new StringBuilder();
-          for (int i = 0; i < a.getMaxAddressLineIndex(); i++) 
+          else
           {
-              b.append(a.getAddressLine(i));
-              if (i < (a.getMaxAddressLineIndex() - 1)) 
-              {
-                  b.append(" ");
-              }
+	          Address a = address.get(0);
+	
+	          StringBuilder b = new StringBuilder();
+	          for (int i = 0; i < a.getMaxAddressLineIndex(); i++) 
+	          {
+	              b.append(a.getAddressLine(i));
+	              if (i < (a.getMaxAddressLineIndex() - 1)) 
+	              {
+	                  b.append(" ");
+	              }
+	          }
+	          result = b.toString();
           }
-
-          return b.toString();
+          
+          return result;
       }
       
       
 	   private void processData()
 	   {
-		   if (null != m_processSMS)
-		   {
-			   if (m_processSMS.getStatus() == Status.RUNNING || m_processSMS.getStatus() == Status.PENDING)
-				   m_processSMS.cancel(true);
-			   
-			   m_processSMS = null;
-		   }
-		   
-		   m_processSMS = new TaskTest();
-		   m_processSMS.execute("");
+		   //Use lastknownlocation to get a quick fix.
+		   AdjustLocation();
 
-		   //m_processSMS.execute(getBaseContext(), GetName(m_Contact), m_PayLoad);
-//		   	String ToWhom = GetName(m_Contact);
-//		   
-//			try 
-//			{
-//				StringBuilder message = new StringBuilder();
-//				
-//				message.append("Hola ");
-//				message.append(ToWhom);
-//				
-//				if (null == m_Location)
-//				{
-//					message.append("\n möglicherweise der Arschloch, hat das GPS ausgeschaltet, so kann ich dir nicht sagen, wo er ist");			   
-//				}
-//				else
-//				{
-//					message.append("\n bin gerade hier ");
-//					message.append("LAT: ");
-//					message.append(String.valueOf(m_Location.getLatitude()));
-//					message.append(", ");
-//					message.append("LONG: ");
-//					message.append(String.valueOf(m_Location.getLongitude()));
-//				   
-//					if ( "" != m_PayLoad)
-//					{
-//						// TODO 
-//					}
-//				}
-//				
-//				message.append("\n\n Mfg, \n WhereAppYouService Service");
-//				
-//				Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Message built");
-//				
-//				SmsManager sms = SmsManager.getDefault();
-//				
-////				ArrayList<String> parts = sms.divideMessage( message.toString());
-//				
-////				 String SENT = "SMS_SENT";
-////				 String DELIVERED = "SMS_DELIVERED";
-//
-////			     PendingIntent sentPI = PendingIntent.getBroadcast( mainContext, 0, new Intent(SENT), 0);
-////			     PendingIntent deliveredPI = PendingIntent.getBroadcast( mainContext, 0, new Intent(DELIVERED), 0);					
-//				
-//				//sms.sendMultipartTextMessage(ToWhom, null, parts, sentPI, deliveredPI);
-//				
-//				sms.sendTextMessage(m_Contact, null, message.toString(), null, null);
-//				
-////				String sent = "android.telephony.SmsManager.STATUS_ON_ICC_SENT";
-////				PendingIntent piSent = PendingIntent.getBroadcast(mainContext, 0, new Intent(sent), 0);
-////
-////				sms.sendTextMessage(m_Contact, null, message.toString(), piSent, null);				
-//				
-//				
-//				SetNotification("Message Sent to " + ToWhom);
-//			}
-//			catch (Exception e) 
-//			{
-//				e.printStackTrace();
-//				SetNotification("Message has not been delivered to " + ToWhom);
-//			}
+		   TaskProcessSms _Task = new TaskProcessSms();
+		   _Task.execute("");
+		   m_TaskList.add(_Task);
 	   }
 	   
 	   private String GetName(String number) 
@@ -566,7 +532,7 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
            return result;
 	   }
 	   
-	   private boolean isFavContactFav(String number) 
+	   private boolean isFavContact(String number) 
 	   {
 		   boolean isStarred = false;
 		   try
@@ -653,16 +619,18 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 		   }
 	   }
 
-	   private void signalTask() 
+	   private void signalTasks() 
 	   {
 		   if (null != m_Location)
 		   {
-			   //If the system restart the Service then Task its null.
-			   if (null != m_processSMS)
+			   if (!m_TaskList.isEmpty())
 			   {
-				   synchronized (m_processSMS)
+				   for (TaskProcessSms _Task : m_TaskList) 
 				   {
-					   m_processSMS.notifyAll();
+					   synchronized (_Task)
+					   {
+						   _Task.notifyAll();
+					   }
 				   }
 			   }
 		   }
@@ -673,23 +641,25 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	   {
 		   m_Location = location;
 		   AdjustLocation();
-
-		   signalTask();
+		   signalTasks();
 	   }
 		
 	   @Override
 	   public void onProviderDisabled(String provider) 
 	   {
+           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " disabled");              
 	   }
 		
 	   @Override
 	   public void onProviderEnabled(String provider) 
 	   {
+           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " enabled");              
 	   }
 		
 	   @Override
 	   public void onStatusChanged(String provider, int status, Bundle extras) 
 	   {
+           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " status changed to " + String.valueOf(status));              
 	   }
 	   
 		@Override
@@ -705,12 +675,12 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 				m_VoiceNotifications = prefs.getBoolean(key, false);
 			else if  (key.contains("onlyFavs"))
 				m_OnlyFavourites = prefs.getBoolean(key, true);
-			else if  (key.contains("locnMinTime"))
-				m_MinTime = prefs.getLong(key, 5 * 60 * 1000);
+			else if  (key.contains("locMinTime"))
+				m_MinTime = prefs.getLong(key, DEFAULT_MIN_TIME);
 			else if  (key.contains("locMinDistance"))
-				m_MinDistance = prefs.getFloat(key, 10);
+				m_MinDistance = prefs.getFloat(key, DEFAULT_MIN_DISTANCE);
 			
-			if  (key.contains("locnMinTime") || (key.contains("locMinDistance")))
+			if  (key.contains("locMinTime") || (key.contains("locMinDistance")))
 			{
 			       if(m_LocManager != null)
 			       {
