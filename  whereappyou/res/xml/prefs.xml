@@ -43,11 +43,5 @@
      android:summary="On/Off"
      android:title="Voice Notifications" />
   
-  <!-- ListPreference
-     android:entries="@array/listOptions"
-     android:entryValues="@array/listValues"
-     android:key="listpref"
-     android:summary="List preference example"
-     android:title="List preference" /-->
  </PreferenceCategory>
 </PreferenceScreen>

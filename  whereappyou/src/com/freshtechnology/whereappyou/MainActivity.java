@@ -79,8 +79,8 @@ public class MainActivity extends Activity
         boolean incognitoMode = prefs.getBoolean("incognitoMode", false);      
         boolean voiceNotifications = prefs.getBoolean("voiceNotifications", false);
         boolean onlyFavs = prefs.getBoolean("onlyFavs", true);
- 	   	long minTime = prefs.getLong("locnMinTime", 5 * 60 * 1000); 
- 	   	float minDistance = prefs.getFloat("locMinDistance", 10);
+// 	   	long minTime = prefs.getLong("locMinTime", 5 * 60 * 1000); 
+// 	   	float minDistance = prefs.getFloat("locMinDistance", 10);
     	
 //    	String listPrefs = prefs.getString("listpref", "Default list prefs");
 
@@ -90,8 +90,8 @@ public class MainActivity extends Activity
     	builder.append("incognitoMode: " + String.valueOf(incognitoMode) + "\n");
     	builder.append("voiceNotifications: " + String.valueOf(voiceNotifications) + "\n");
     	builder.append("onlyFavs: " + String.valueOf(onlyFavs) + "\n");
-    	builder.append("minTime: " + String.valueOf(minTime) + "\n");    	
-    	builder.append("minDistance: " + String.valueOf(minDistance));
+//    	builder.append("minTime: " + String.valueOf(minTime) + "\n");    	
+//    	builder.append("minDistance: " + String.valueOf(minDistance));
     	//builder.append("List preference: " + listPrefs);
     	
     	textView.setText(builder.toString());
