@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+
+import android.speech.tts.TextToSpeech;
 
 import org.apache.http.impl.io.HttpRequestParser;
 //import java.util.concurrent.Executors;
@@ -37,7 +40,9 @@ import android.telephony.SmsManager;
 import android.util.Log; 
 //import android.widget.Toast;
 
-public class WhereAppYouService extends Service implements LocationListener, SharedPreferences.OnSharedPreferenceChangeListener
+public class WhereAppYouService extends Service implements LocationListener, 
+						SharedPreferences.OnSharedPreferenceChangeListener,
+						TextToSpeech.OnInitListener
 {
 	   private String m_Contact = "";
 	   private String m_PayLoad = "";
@@ -61,6 +66,8 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	   private NotificationManager m_NotificationManager = null;
 //	   private Builder m_builder = null;
 	   
+	   private TextToSpeech m_Tts = null;
+	   private boolean m_ttsInitialied = false;
 	   private List<TaskProcessSms> m_TaskList;
    
 	   
@@ -77,6 +84,8 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	        try 
 	        {
 	        	m_TaskList = new ArrayList<TaskProcessSms>(); 
+	   
+	        	m_Tts = new TextToSpeech(this, this);
 	        	
 		        //m_Application = (WhereAppYouApplication)getApplication();
 	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -175,6 +184,12 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 
 	        clearTasks();
 	        
+	        if (m_Tts != null) 
+	        {
+	        	m_Tts.stop();
+	        	m_Tts.shutdown();
+	        }
+	        
 	        m_LocManager.removeUpdates(this);
         	m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
         	m_Preferences = null;
@@ -201,6 +216,12 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
        protected void finalize() throws Throwable 
        {
     	   clearTasks();
+
+	        if (m_Tts != null) 
+	        {
+	        	m_Tts.stop();
+	        	m_Tts.shutdown();
+	        }
     	   
 	       if (null != m_LocManager)
 	       {
@@ -254,12 +275,6 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
        {
     		if (!m_IncognitoMode)    	
     		{
-    		   	
-    		   if (m_VoiceNotifications)
-    		   {
-    			   // TODO : Implement TTS here
-    		   }
-    		   
 	           // set up the notification and start foreground
 	           String ns = Context.NOTIFICATION_SERVICE;
 	           if (null == m_NotificationManager)
@@ -276,6 +291,11 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 	
 	           m_NotificationManager.notify(1, not);
 	           this.startForeground(1, not);
+	           
+    		   if (m_VoiceNotifications && m_ttsInitialied)
+    		   {
+    			   m_Tts.speak(message, TextToSpeech.QUEUE_FLUSH, null);
+    		   }
     		}
     		else 
     			stopForeground(true);
@@ -384,7 +404,8 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 					}
 					
 					message.append(" ");
-					message.append(URLEncoder.encode(uri.toString(), "UTF-8"));
+					message.append(uri.toString());
+//					message.append(URLEncoder.encode(uri.toString(), "UTF-8"));
 				}
 				
 				Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Message built");
@@ -688,5 +709,28 @@ public class WhereAppYouService extends Service implements LocationListener, Sha
 			    	   registerListeners();
 			       }
 			}
+		}
+
+		@Override
+		public void onInit(int status) 
+		{
+			if (status == TextToSpeech.SUCCESS) 
+			{
+//				Locale.getDefault().getLanguage();
+				int result = m_Tts.setLanguage(Locale.US);
+ 
+				if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) 
+				{
+					Log.e("TTS", "This Language is not supported");
+				} 
+				else 
+				{
+					m_ttsInitialied = true;
+				}
+ 			} 
+			else 
+			{
+				Log.e("TTS", "Initilization Failed!");
+			}			
 		}
 }
