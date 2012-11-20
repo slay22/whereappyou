@@ -1,15 +1,12 @@
 package com.freshtechnology.whereappyou;
 
 import java.io.IOException;
-import java.net.URLEncoder;
+//import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import android.speech.tts.TextToSpeech;
-
-import org.apache.http.impl.io.HttpRequestParser;
-//import java.util.concurrent.Executors;
 
 import android.app.Notification;
 //import android.app.Notification.Builder;
