@@ -26,7 +26,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.AsyncTask.Status;
+//import android.os.AsyncTask.Status;
 //import android.os.AsyncTask.Status;
 import android.os.Bundle;
 //import android.os.CountDownTimer;
@@ -292,6 +292,8 @@ public class WhereAppYouService extends Service implements LocationListener,
     		   if (m_VoiceNotifications && m_ttsInitialied)
     		   {
     			   m_Tts.speak(message, TextToSpeech.QUEUE_FLUSH, null);
+    			   
+    			   //m_Tts.speak("lul hallo alex wie gehts", TextToSpeech.QUEUE_FLUSH, null);    			   
     		   }
     		}
     		else 
@@ -713,8 +715,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 		{
 			if (status == TextToSpeech.SUCCESS) 
 			{
-//				Locale.getDefault().getLanguage();
-				int result = m_Tts.setLanguage(Locale.US);
+			
+				int result = m_Tts.setLanguage(Locale.getDefault());
  
 				if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) 
 				{
