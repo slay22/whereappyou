@@ -601,35 +601,41 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   // finds the most recent and most accurate locations
 	   private void AdjustLocation() 
 	   {
-		   float oldacc = 0f;
+		   List<String> providers = m_LocManager.getAllProviders();
+		   Location tempLoc = null;
+		   float bestAccuracy = Float.MAX_VALUE;
+		   long bestTime = Long.MIN_VALUE;
 		   
-		   if (null != m_Location)
-		   {
-			   if (m_Location.hasAccuracy())
-				   oldacc = m_Location.getAccuracy();
-		   }
-		   
-		   List<String> providers = m_LocManager.getProviders(true);
-		   Location _tempLoc = null;
 		   try 
 		   {
-			   if (!providers.isEmpty()) 
+			   // Iterate through all the providers on the system, keeping
+			   // note of the most accurate result within the acceptable time limit.
+			   // If no result is found within maxTime, return the newest Location.
+			   for (String provider: providers) 					   
 			   {
-				   for (int i = providers.size() - 1; i >= 0; i--) 
-				   {
-					   _tempLoc = m_LocManager.getLastKnownLocation(providers.get(i));
+				   tempLoc = m_LocManager.getLastKnownLocation(provider);
 
-					   if (_tempLoc != null) 
+				   if (tempLoc != null) 
+				   {
+					   float acc = Float.MAX_VALUE;
+				       long time = tempLoc.getTime();
+				       
+					   if (tempLoc.hasAccuracy())
 					   {
-						   if (_tempLoc.hasAccuracy()) // if we have accuracy, capture the best
-						   {
-							   float acc = _tempLoc.getAccuracy();
-							   if (acc > oldacc) 
-							   {
-								   m_Location = _tempLoc;
-							   }
-						   }
+						   acc = tempLoc.getAccuracy();
 					   }
+					   
+				       if ((time > m_MinTime && acc < bestAccuracy)) 
+				       {
+				    	   m_Location = tempLoc;
+				    	   bestAccuracy = acc;
+				    	   bestTime = time;
+				       }
+				       else if (time < m_MinTime &&  bestAccuracy == Float.MAX_VALUE && time > bestTime)
+				       {
+				    	   m_Location = tempLoc;
+				    	   bestTime = time;
+				       }
 				   }
 			   }
 		   } 
@@ -715,7 +721,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 		{
 			if (status == TextToSpeech.SUCCESS) 
 			{
-			
 				int result = m_Tts.setLanguage(Locale.getDefault());
  
 				if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) 
