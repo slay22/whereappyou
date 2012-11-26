@@ -61,15 +61,14 @@ public class MainActivity extends ListActivity
     {
     	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
     	
-    	boolean usePass = prefs.getBoolean("usePassive", true);
-        boolean useNet = prefs.getBoolean("useNetwork", false);
         boolean incognitoMode = prefs.getBoolean("incognitoMode", false);      
         boolean voiceNotifications = prefs.getBoolean("voiceNotifications", false);
         boolean onlyFavs = prefs.getBoolean("onlyFavs", true);
+        boolean respWhenLocAvailable = prefs.getBoolean("respWhenLocAvailable", false);        
         
-        String[] values = new String[] {"Use Cell Mode " + String.valueOf(usePass), "Use Network Mode "+ String.valueOf(useNet), 
+        String[] values = new String[] {"Answer When Location Available " + String.valueOf(respWhenLocAvailable), 
         		"Incognito Mode " + String.valueOf(incognitoMode), "Voice Notifications " + String.valueOf(voiceNotifications), 
-        		"Answer ONLY to favtourites " + String.valueOf(onlyFavs) };
+        		"Answer ONLY to favorites " + String.valueOf(onlyFavs) };
         
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, values);
         setListAdapter(adapter);        
