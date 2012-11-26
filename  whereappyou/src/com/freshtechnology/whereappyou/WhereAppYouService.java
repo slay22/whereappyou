@@ -47,11 +47,10 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   private LocationManager m_LocManager;
 	   private static Location m_Location;
 	   //private boolean m_GpsEnabled = false;
-	   private boolean m_UseNet = false;
-	   private boolean m_UsePass = false;
 	   private boolean m_IncognitoMode = false;
 	   private boolean m_VoiceNotifications = false;
 	   private boolean m_OnlyFavourites = true;
+	   private boolean m_RespondWhenLocationAvailable = false;
 	   
 	   private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
 	   private final static float DEFAULT_MIN_DISTANCE  = 10;
@@ -88,13 +87,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 	        	m_Preferences.registerOnSharedPreferenceChangeListener(this);
 	        	
-                //toasts = m_Preferences.getBoolean("toasts", true);
-	        	m_UsePass = m_Preferences.getBoolean("usePassive", true);
-                m_UseNet = m_Preferences.getBoolean("useNetwork", false);
                 m_IncognitoMode = m_Preferences.getBoolean("incognitoMode", false);      
                 m_VoiceNotifications = m_Preferences.getBoolean("voiceNotifications", false);
                 m_OnlyFavourites = m_Preferences.getBoolean("onlyFavs", true);
                 
+                m_RespondWhenLocationAvailable = m_Preferences.getBoolean("respWhenLocAvailable", false); 
          	   	m_MinTime = m_Preferences.getLong("locnMinTime", DEFAULT_MIN_TIME); 
          	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", DEFAULT_MIN_DISTANCE);
 	        } 
@@ -121,7 +118,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	m_Contact = (String)bundle.get("PhoneNumber");
 	        	m_PayLoad = (String)bundle.get("PayLoad");
 	        	
-	        	// TODO : Check here to answer the sms depending on the options to allow all, allow only favourites, allow predetermined list
+	        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow predetermined list
 	        	
 	        	boolean answer = true;
 	        	if (m_OnlyFavourites)
@@ -335,7 +332,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 					try 
 					{
 						Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Waiting");
-						wait(10000);
+						
+						//If the Service has to respond when location its available, then we wait here until notified
+						//else we wait and after that still no location available, we inform the caller to try later.
+						if (!m_RespondWhenLocationAvailable)						
+							wait(10000);
 					} catch (InterruptedException e) 
 					{
 						// TODO Auto-generated catch block
@@ -461,6 +462,7 @@ public class WhereAppYouService extends Service implements LocationListener,
         }
       }
       
+      //Return the Distance between current location and the requested one.
       private String getDistanceString(String Lat, String Lon) 
       {
     	  Location pointLocation = new Location("POINT_LOCATION");
@@ -479,6 +481,7 @@ public class WhereAppYouService extends Service implements LocationListener,
     	  return String.valueOf(distance) + unit;
       }
       
+      //Returns a geocoded Adress from coordinates.
       public String getAddress(double latitude, double longitude)
       {
     	  String result = "";
@@ -518,9 +521,9 @@ public class WhereAppYouService extends Service implements LocationListener,
       }
       
       
+      //Starts a new task
 	   private void processData()
 	   {
-		   //Use lastknownlocation to get a quick fix.
 		   AdjustLocation();
 
 		   TaskProcessSms _Task = new TaskProcessSms();
@@ -528,6 +531,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   m_TaskList.add(_Task);
 	   }
 	   
+	   //Returns the name of the caller, searching in the contact List
 	   private String GetName(String number) 
 	   {
 		   String result = number;
@@ -536,12 +540,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 	           ContentResolver cr = getContentResolver();
 	
 	           Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-	           Cursor c = cr.query(uri, new String[] { PhoneLookup.DISPLAY_NAME /*, PhoneLookup.STARRED*/ }, null, null, null);
+	           Cursor c = cr.query(uri, new String[] { PhoneLookup.DISPLAY_NAME }, null, null, null);
 	
 	           if (c.moveToFirst()) 
 	           {
                    String name = c.getString(c.getColumnIndex(PhoneLookup.DISPLAY_NAME));
-                   //boolean isStarred = Boolean.getBoolean(c.getString(c.getColumnIndex(PhoneLookup.STARRED))); 
                    result = name;
 	           }       
            }
@@ -552,6 +555,7 @@ public class WhereAppYouService extends Service implements LocationListener,
            return result;
 	   }
 	   
+	   //Returns of the caller belongs to the favourite's list.
 	   private boolean isFavContact(String number) 
 	   {
 		   boolean isStarred = false;
@@ -574,27 +578,29 @@ public class WhereAppYouService extends Service implements LocationListener,
            return isStarred;
 	   }
 
+       // Register the listeners with the Location Manager to receive location updates.
+	   // First try to use ONLY Passive Provider (this consumes less Battery and CPU)
+	   // and should return a "quick fix" when enabled if not then fall back to 
+	   // others Providers trying to use GPS as LAST OPTION.
 	   private void registerListeners() 
 	   {
-           // start location provider GPS
-           // Register the listener with the Location Manager to
-           // receive location updates
-           if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
-           {
-        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
-        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, m_MinTime, m_MinDistance, this);
-           } 
-           
-           if (m_UseNet && m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
-           {
-        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, m_MinTime, m_MinDistance, this);
-           }
-           
-           if (m_UsePass && m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
+           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
            {
         	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
         	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, m_MinTime, m_MinDistance, this);
+           }
+           else
+           {
+	           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
+	           {
+	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, m_MinTime, m_MinDistance, this);
+	           }
+	           else if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
+	           {
+	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
+	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, m_MinTime, m_MinDistance, this);
+	           } 
            }
 	   }
 	   
@@ -608,8 +614,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   
 		   try 
 		   {
-			   // Iterate through all the providers on the system, keeping
-			   // note of the most accurate result within the acceptable time limit.
+			   // Iterate through all the providers on the system to get a quick fix
+			   // keeping note of the most accurate result within the acceptable time limit.
 			   // If no result is found within maxTime, return the newest Location.
 			   for (String provider: providers) 					   
 			   {
@@ -687,15 +693,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
            Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " status changed to " + String.valueOf(status));              
 	   }
-	   
+	    
 		@Override
 		public void onSharedPreferenceChanged(SharedPreferences prefs, String key) 
 		{
-			if (key.contains("usePassive"))
-				m_UsePass = prefs.getBoolean(key, true);
-			else if  (key.contains("useNetwork"))
-				m_UseNet = prefs.getBoolean(key, false);
-			else if  (key.contains("incognitoMode"))
+			if  (key.contains("incognitoMode"))
 				m_IncognitoMode = prefs.getBoolean(key, false);
 			else if  (key.contains("voiceNotifications"))
 				m_VoiceNotifications = prefs.getBoolean(key, false);
@@ -705,6 +707,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 				m_MinTime = prefs.getLong(key, DEFAULT_MIN_TIME);
 			else if  (key.contains("locMinDistance"))
 				m_MinDistance = prefs.getFloat(key, DEFAULT_MIN_DISTANCE);
+			else if  (key.contains("respWhenLocAvailable"))
+				m_RespondWhenLocationAvailable = prefs.getBoolean(key, false);
 			
 			if  (key.contains("locMinTime") || (key.contains("locMinDistance")))
 			{
