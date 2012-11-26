@@ -4,16 +4,6 @@
    android:summary="WhereAppYou Settings"
    android:title="Location Prefereneces" >
    
-  <CheckBoxPreference
-     android:key="usePassive"
-     android:summary="On/Off"
-     android:title="Use Cell Mode" />
-
-  <CheckBoxPreference
-     android:key="useNetwork"
-     android:summary="On/Off"
-     android:title="Use Network Mode" />
-  
   <EditTextPreference
      android:key="locnMinTime"
      android:summary="Enter Min Loc Timeout"
@@ -28,11 +18,17 @@
  <PreferenceCategory
    android:summary="WhereAppYou Settings"
    android:title="Other" >
+
+  <CheckBoxPreference
+     android:key="respWhenLocAvailable"
+     android:summary="On/Off"
+     android:title="Answer When Location Available." />
+     
   <CheckBoxPreference
      android:key="onlyFavs"
      android:summary="On/Off"
      android:title="Answer ONLY to fav." />
-
+  
   <CheckBoxPreference
      android:key="incognitoMode"
      android:summary="On/Off"
