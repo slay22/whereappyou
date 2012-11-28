@@ -394,10 +394,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 						 ---------------------------------------------- */
 						
 						//Distance To Point.
-						if (m_PayLoad.toUpperCase().contains("DTP"))
+						String dtp = m_PayLoad.toUpperCase(Locale.getDefault());
+						if (dtp.contains("DTP"))
 						{
-							int index = m_PayLoad.toUpperCase().indexOf("DTP="); 
-							String[] dtpParams = m_PayLoad.toUpperCase().substring(index).split(",");
+							int index = dtp.indexOf("DTP="); 
+							String[] dtpParams = dtp.substring(index).split(",");
 							message.append(getDistanceString(dtpParams[0], dtpParams[1]));
 							message.append(" entfernt");
 						}
