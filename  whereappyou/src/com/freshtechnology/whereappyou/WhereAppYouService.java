@@ -3,6 +3,7 @@ package com.freshtechnology.whereappyou;
 import java.io.IOException;
 //import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -33,7 +34,9 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract.PhoneLookup;
+import android.provider.Settings;
 import android.telephony.SmsManager;
+import android.text.format.Time;
 import android.util.Log; 
 //import android.widget.Toast;
 
@@ -291,6 +294,18 @@ public class WhereAppYouService extends Service implements LocationListener,
     			   m_Tts.speak(message, TextToSpeech.QUEUE_FLUSH, null);
     			   
     			   //m_Tts.speak("lul hallo alex wie gehts", TextToSpeech.QUEUE_FLUSH, null);    			   
+    		   }
+    		   
+    		   try
+    		   {
+    			   Time today = new Time(Time.getCurrentTimezone());
+    			   today.setToNow();    			   
+    			   String formattedText =  message + " " + today.format("%k:%M:%S");
+    			   Settings.System.putString(getBaseContext().getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, formattedText);
+    		   }
+    		   catch (Exception e)
+    		   {
+    			   e.printStackTrace();
     		   }
     		}
     		else 
