@@ -300,8 +300,7 @@ public class WhereAppYouService extends Service implements LocationListener,
     		   {
     			   Time today = new Time(Time.getCurrentTimezone());
     			   today.setToNow();    			   
-    			   String formattedText =  message + " " + today.format("%k:%M:%S");
-    			   Settings.System.putString(getBaseContext().getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, formattedText);
+    			   Settings.System.putString(getBaseContext().getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, String.format("%s %s", message, today.format("%k:%M:%S")));
     		   }
     		   catch (Exception e)
     		   {
