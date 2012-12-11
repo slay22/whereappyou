@@ -57,6 +57,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   
 	   private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
 	   private final static float DEFAULT_MIN_DISTANCE  = 10;
+	   private static final int TWO_MINUTES = 1000 * 60 * 2;
+	   
 	   private long m_MinTime = 0;
 	   private float m_MinDistance = 10;
 	   
@@ -596,7 +598,7 @@ public class WhereAppYouService extends Service implements LocationListener,
        // Register the listeners with the Location Manager to receive location updates.
 	   // First try to use ONLY Passive Provider (this consumes less Battery and CPU)
 	   // and should return a "quick fix" when enabled if not then fall back to 
-	   // others Providers trying to use GPS as LAST OPTION.
+	   // others Providers, trying to use GPS as LAST OPTION.
 	   private void registerListeners() 
 	   {
            if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
@@ -624,39 +626,21 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
 		   List<String> providers = m_LocManager.getAllProviders();
 		   Location tempLoc = null;
-		   float bestAccuracy = Float.MAX_VALUE;
-		   long bestTime = Long.MIN_VALUE;
 		   
 		   try 
 		   {
 			   // Iterate through all the providers on the system to get a quick fix
 			   // keeping note of the most accurate result within the acceptable time limit.
-			   // If no result is found within maxTime, return the newest Location.
 			   for (String provider: providers) 					   
 			   {
 				   tempLoc = m_LocManager.getLastKnownLocation(provider);
 
 				   if (tempLoc != null) 
 				   {
-					   float acc = Float.MAX_VALUE;
-				       long time = tempLoc.getTime();
-				       
-					   if (tempLoc.hasAccuracy())
+					   if (isBetterLocation(tempLoc, m_Location))
 					   {
-						   acc = tempLoc.getAccuracy();
+						   m_Location = tempLoc;
 					   }
-					   
-				       if ((time > m_MinTime && acc < bestAccuracy)) 
-				       {
-				    	   m_Location = tempLoc;
-				    	   bestAccuracy = acc;
-				    	   bestTime = time;
-				       }
-				       else if (time < m_MinTime &&  bestAccuracy == Float.MAX_VALUE && time > bestTime)
-				       {
-				    	   m_Location = tempLoc;
-				    	   bestTime = time;
-				       }
 				   }
 			   }
 		   } 
@@ -666,6 +650,60 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   }
 	   }
 
+	   // Compares 2 locations to find the more accurate one
+	   protected boolean isBetterLocation(Location location, Location currentBestLocation) 
+	   {
+		   boolean result = false;
+		   
+	        if (null != currentBestLocation) 
+	        {
+		        long timeDelta = location.getTime() - currentBestLocation.getTime();
+		        boolean isSignificantlyNewer = (timeDelta > TWO_MINUTES);
+		        boolean isSignificantlyOlder = (timeDelta < -TWO_MINUTES);
+		        boolean isNewer = (timeDelta > 0);
+
+		        if (isSignificantlyNewer) 
+		        {
+		        	result = true;
+		        } 
+		        else if (isSignificantlyOlder) 
+		        {
+		        	result =  false;
+		        }
+
+		        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
+		        boolean isLessAccurate = (accuracyDelta > 0);
+		        boolean isMoreAccurate = (accuracyDelta < 0);
+		        boolean isSignificantlyLessAccurate = (accuracyDelta > 200);
+		        boolean isFromSameProvider = isSameProvider(location.getProvider(), currentBestLocation.getProvider());
+
+		        if (isMoreAccurate) 
+		        {
+		        	result = true;
+		        } 
+		        else if (isNewer && !isLessAccurate) 
+		        {
+		        	result = true;
+		        } 
+		        else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) 
+		        {
+		        	result = true;
+		        }
+		        else result = false;
+	        }
+	        
+	        return result;
+	    }	
+	   
+	    private boolean isSameProvider(String provider1, String provider2) 
+	    {
+	        if (null == provider1) 
+	        {
+	            return (null == provider2);
+	        }
+	        return provider1.equals(provider2);
+	    }
+	   
 	   private void signalTasks() 
 	   {
 		   if (null != m_Location)
