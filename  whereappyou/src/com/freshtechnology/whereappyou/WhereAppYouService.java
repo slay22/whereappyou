@@ -3,7 +3,6 @@ package com.freshtechnology.whereappyou;
 import java.io.IOException;
 //import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -56,8 +55,9 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   private boolean m_RespondWhenLocationAvailable = false;
 	   
 	   private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
+	   private final static long DEFAULT_WAIT_TIME = 45 * 1000;
 	   private final static float DEFAULT_MIN_DISTANCE  = 10;
-	   private static final int TWO_MINUTES = 1000 * 60 * 2;
+	   private static final int TWO_MINUTES = 2 * 60* 1000;
 	   
 	   private long m_MinTime = 0;
 	   private float m_MinDistance = 10;
@@ -336,6 +336,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 //			ToWhom = (String)params[1];
 //			PayLoad = (String)params[2];
 			
+			//TODO : Translate all messages to "current" language.
+			
 			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
 			
 			ToWhom = GetName(m_Contact);			
@@ -349,10 +351,17 @@ public class WhereAppYouService extends Service implements LocationListener,
 					{
 						Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Waiting");
 						
-						//If the Service has to respond when location its available, then we wait here until notified
-						//else we wait and after that still no location available, we inform the caller to try later.
+						//If the Service has to respond when location becomes available, then we wait here until notified
+						//if after waiting, still no location is available, we inform the caller to try again later.
+						
+						//IMPORTANT : It can take about 45 seconds to acquire satellite signals (if GPS Enabled) when 
+						//first start the application or roughly 15 seconds if it has been used recently. Because the 
+						//signal cannot pass through solid non-transparent objects, GPS requires an non-obstructed view 
+						//of the sky to work correctly. Thus, signal reception can be degraded by tall buildings, bridges,
+						//tunnels, mountains, etc. Also, moving around while locking onto several satellites makes it harder
+						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
 						if (!m_RespondWhenLocationAvailable)						
-							wait(10000);
+							wait(DEFAULT_WAIT_TIME);
 					} catch (InterruptedException e) 
 					{
 						// TODO Auto-generated catch block
@@ -598,7 +607,7 @@ public class WhereAppYouService extends Service implements LocationListener,
        // Register the listeners with the Location Manager to receive location updates.
 	   // First try to use ONLY Passive Provider (this consumes less Battery and CPU)
 	   // and should return a "quick fix" when enabled if not then fall back to 
-	   // others Providers, trying to use GPS as LAST OPTION.
+	   // others Providers, trying to use GPS as LAST RESORT.
 	   private void registerListeners() 
 	   {
            if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
