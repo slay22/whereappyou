@@ -360,8 +360,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 						//of the sky to work correctly. Thus, signal reception can be degraded by tall buildings, bridges,
 						//tunnels, mountains, etc. Also, moving around while locking onto several satellites makes it harder
 						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
-						if (!m_RespondWhenLocationAvailable)						
+						
+						//Alex : i've changed this
+						if (m_RespondWhenLocationAvailable)
+							wait();
+						else
 							wait(DEFAULT_WAIT_TIME);
+						
 					} catch (InterruptedException e) 
 					{
 						// TODO Auto-generated catch block
