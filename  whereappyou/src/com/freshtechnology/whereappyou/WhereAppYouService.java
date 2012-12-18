@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 FreshTechnology (Leonardo Gutierrez & Alex Luja)
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License. 
+ */
+
 package com.freshtechnology.whereappyou;
 
 import java.io.IOException;
@@ -57,7 +73,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
 	   private final static long DEFAULT_WAIT_TIME = 45 * 1000;
 	   private final static float DEFAULT_MIN_DISTANCE  = 10;
-	   private static final int TWO_MINUTES = 2 * 60* 1000;
+	   private final static int TWO_MINUTES = 2 * 60 * 1000;
 	   
 	   private long m_MinTime = 0;
 	   private float m_MinDistance = 10;
@@ -123,7 +139,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	m_Contact = (String)bundle.get("PhoneNumber");
 	        	m_PayLoad = (String)bundle.get("PayLoad");
 	        	
-	        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow predetermined list
+	        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
 	        	
 	        	boolean answer = true;
 	        	if (m_OnlyFavourites)
@@ -351,25 +367,24 @@ public class WhereAppYouService extends Service implements LocationListener,
 					{
 						Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Waiting");
 						
-						//If the Service has to respond when location becomes available, then we wait here until notified
-						//if after waiting, still no location is available, we inform the caller to try again later.
+						//If the Service must respond when location becomes available, then we wait here until notified.
+						//if not then we wait anyway but only 45 seconds (see explanation below) but if after waiting, still 
+						//no location becomes available, we inform the caller to try again later.
 						
-						//IMPORTANT : It can take about 45 seconds to acquire satellite signals (if GPS Enabled) when 
-						//first start the application or roughly 15 seconds if it has been used recently. Because the 
+						//IMPORTANT : "Normally" It can take about 45 seconds to acquire satellite signals (if GPS Enabled) 
+						//when first start the application or roughly 15 seconds if it has been used recently. Because the 
 						//signal cannot pass through solid non-transparent objects, GPS requires an non-obstructed view 
 						//of the sky to work correctly. Thus, signal reception can be degraded by tall buildings, bridges,
 						//tunnels, mountains, etc. Also, moving around while locking onto several satellites makes it harder
 						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
 						
-						//Alex : i've changed this
 						if (m_RespondWhenLocationAvailable)
-							wait();
+							wait(); //Actually i don't know which problems (CPU/battery) this option can carry, we need to test on real devices.
 						else
 							wait(DEFAULT_WAIT_TIME);
 						
 					} catch (InterruptedException e) 
 					{
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -380,9 +395,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 				
 				message = new StringBuilder();
 					
-				//message.append("Hola ");
-				//message.append(ToWhom);
-				   
 				if (null == m_Location)
 				{
 					message.append("Hi ");
@@ -796,7 +808,7 @@ public class WhereAppYouService extends Service implements LocationListener,
  
 				if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) 
 				{
-					Log.e("TTS", "This Language is not supported");
+					Log.e("WhereAppYouService", "TTS : This Language is not supported");
 				} 
 				else 
 				{
@@ -805,7 +817,7 @@ public class WhereAppYouService extends Service implements LocationListener,
  			} 
 			else 
 			{
-				Log.e("TTS", "Initilization Failed!");
+				Log.e("WhereAppYouService", "TTS : Initilization Failed!");
 			}			
 		}
 }
