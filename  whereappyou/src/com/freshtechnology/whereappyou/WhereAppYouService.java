@@ -676,7 +676,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   }
 	   }
 
-	   // Compares 2 locations to find the more accurate one
+	   /** 
+	     * From the SDK documentation. Determines whether one Location reading is better than the current Location fix
+	     * 
+	     * @param location  The new Location that you want to evaluate
+	     * @param currentBestLocation  The current Location fix, to which you want to compare the new one
+	     * @return true if the location is better then the currentBestLocation
+	     */
 	   protected boolean isBetterLocation(Location location, Location currentBestLocation) 
 	   {
 		   boolean result = false;
