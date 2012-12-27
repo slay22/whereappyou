@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 FreshTechnology (Leonardo Gutierrez & Alex Luja)
+ * Copyright 2012-2013 FreshTechnology (Leonardo Gutierrez & Alex Luja)
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 package com.freshtechnology.whereappyou;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.app.Activity;
@@ -24,10 +28,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -75,6 +81,24 @@ public class MainActivity extends ListActivity
         
     private void displaySharedPreferences() 
     {
+    	ArrayList<Map<String, String>> list = buildData();
+    	String[] from = { "name", "purpose" };
+    	int[] to = { android.R.id.text1, android.R.id.text2 };
+
+    	SimpleAdapter adapter = new SimpleAdapter(this, list, android.R.layout.simple_list_item_2, from, to);    	
+    	
+        setListAdapter(adapter);        
+        
+        adapter.notifyDataSetChanged();
+        
+        
+// 	   	long minTime = prefs.getLong("locMinTime", 5 * 60 * 1000); 
+// 	   	float minDistance = prefs.getFloat("locMinDistance", 10);
+   	
+    }
+    
+    private ArrayList<Map<String, String>> buildData() 
+    {
     	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
     	
         boolean incognitoMode = prefs.getBoolean("incognitoMode", false);      
@@ -82,30 +106,23 @@ public class MainActivity extends ListActivity
         boolean onlyFavs = prefs.getBoolean("onlyFavs", true);
         boolean respWhenLocAvailable = prefs.getBoolean("respWhenLocAvailable", false);        
         
-        String[] values = new String[] {"Answer When Location Available " + String.valueOf(respWhenLocAvailable), 
-        		"Incognito Mode " + String.valueOf(incognitoMode), "Voice Notifications " + String.valueOf(voiceNotifications), 
-        		"Answer ONLY to favorites " + String.valueOf(onlyFavs) };
+        ArrayList<Map<String, String>> list = new ArrayList<Map<String, String>>();
         
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, values);
-        setListAdapter(adapter);        
+        list.add(putData(String.format("Answers when Location Available (%s)", String.valueOf(respWhenLocAvailable)), "Answers only when location changed."));
+        list.add(putData(String.format("Incognito Mode (%s)", String.valueOf(incognitoMode)), "Does not show Notifications."));
+        list.add(putData(String.format("Voice Notifications (%s)", String.valueOf(voiceNotifications)), "Speaks when a notification was sent."));
+        list.add(putData(String.format("Answer ONLY to favorites (%s)", String.valueOf(onlyFavs)), "Responds only to starred contacts."));
         
-// 	   	long minTime = prefs.getLong("locMinTime", 5 * 60 * 1000); 
-// 	   	float minDistance = prefs.getFloat("locMinDistance", 10);
-    	
-//    	String listPrefs = prefs.getString("listpref", "Default list prefs");
-
-//    	StringBuilder builder = new StringBuilder();
-//    	builder.append("usePassive: " + String.valueOf(usePass) + "\n");
-//    	builder.append("useNet: " + String.valueOf(useNet) + "\n");
-//    	builder.append("incognitoMode: " + String.valueOf(incognitoMode) + "\n");
-//    	builder.append("voiceNotifications: " + String.valueOf(voiceNotifications) + "\n");
-//    	builder.append("onlyFavs: " + String.valueOf(onlyFavs) + "\n");
-//    	builder.append("minTime: " + String.valueOf(minTime) + "\n");    	
-//    	builder.append("minDistance: " + String.valueOf(minDistance));
-    	//builder.append("List preference: " + listPrefs);
-    	
-//    	textView.setText(builder.toString());
-    }
+        return list;
+      }    
+    
+    private HashMap<String, String> putData(String name, String purpose) 
+    {
+        HashMap<String, String> item = new HashMap<String, String>();
+        item.put("name", name);
+        item.put("purpose", purpose);
+        return item;
+      }
     
 //    @Override
 //    protected void onListItemClick(ListView l, View v, int position, long id) 
