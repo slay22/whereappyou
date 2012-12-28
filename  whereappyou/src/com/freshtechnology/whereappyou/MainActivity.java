@@ -22,20 +22,20 @@ import java.util.Map;
 
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.app.Activity;
+//import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ListAdapter;
-import android.widget.ListView;
+//import android.widget.Button;
+//import android.widget.ListAdapter;
+//import android.widget.ListView;
 import android.widget.SimpleAdapter;
-import android.widget.SimpleCursorAdapter;
-import android.widget.TextView;
-import android.widget.Toast;
+//import android.widget.SimpleCursorAdapter;
+//import android.widget.TextView;
+//import android.widget.Toast;
 
 public class MainActivity extends ListActivity 
 {
@@ -105,13 +105,18 @@ public class MainActivity extends ListActivity
         boolean voiceNotifications = prefs.getBoolean("voiceNotifications", false);
         boolean onlyFavs = prefs.getBoolean("onlyFavs", true);
         boolean respWhenLocAvailable = prefs.getBoolean("respWhenLocAvailable", false);        
+        boolean notifyWhenLocked = prefs.getBoolean("notifyWhenLocked", false);
+        
         
         ArrayList<Map<String, String>> list = new ArrayList<Map<String, String>>();
         
-        list.add(putData(String.format("Answers when Location Available (%s)", String.valueOf(respWhenLocAvailable)), "Answers only when location changed."));
-        list.add(putData(String.format("Incognito Mode (%s)", String.valueOf(incognitoMode)), "Does not show Notifications."));
-        list.add(putData(String.format("Voice Notifications (%s)", String.valueOf(voiceNotifications)), "Speaks when a notification was sent."));
-        list.add(putData(String.format("Answer ONLY to favorites (%s)", String.valueOf(onlyFavs)), "Responds only to starred contacts."));
+        String _msgTemplate = "%s (%s)";
+        
+        list.add(putData(String.format(_msgTemplate, getString(R.string.respWhenLocAvailable_label), String.valueOf(respWhenLocAvailable)), getString(R.string.respWhenLocAvailable_txt)));
+        list.add(putData(String.format(_msgTemplate, getString(R.string.incognitomode_label), String.valueOf(incognitoMode)), getString(R.string.incognitomode_txt)));
+        list.add(putData(String.format(_msgTemplate, getString(R.string.voiceNotifications_label), String.valueOf(voiceNotifications)), getString(R.string.voiceNotifications_txt)));
+        list.add(putData(String.format(_msgTemplate, getString(R.string.onlyFavs_label), String.valueOf(onlyFavs)), getString(R.string.onlyFavs_txt)));
+        list.add(putData(String.format(_msgTemplate, getString(R.string.notifyWhenLocked_label), String.valueOf(notifyWhenLocked)), getString(R.string.notifyWhenLocked_txt)));
         
         return list;
       }    
