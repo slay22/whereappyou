@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">WhereAppYou</string>
+    
+    <string name="incognitomode_txt">Benachrichtigungen anzeigen.</string>
+	<string name="incognitomode_label">Incognito-Modus</string>
+    <string name="respWhenLocAvailable_txt">Antwortet eine Anfrage erst, wenn Standort zur Verfügung steht oder "sofort" auch wenn nicht verfügbar..</string>
+	<string name="respWhenLocAvailable_label">Antwort verfügbaren Standort</string>
+    <string name="voiceNotifications_txt">Spricht, wenn eine Benachrichtigung gesendet wurde.</string>
+	<string name="voiceNotifications_label">Stimme Benachrichtigungen</string>
+    <string name="onlyFavs_txt">Antwortet auf eine Anfrage nur, wenn der Kontakt zu Favoriten gehört.</string>
+	<string name="onlyFavs_label">Nur zu Favoriten</string>
+    <string name="notifyWhenLocked_txt">Zeigt Benachrichtigungen, wenn das Telefon gesperrt wurde..</string>
+	<string name="notifyWhenLocked_label">Benachrichtigen wenn gesperrt</string>
+		
+	<string name="menusettings_label">Einstellungen</string>
+	<string name="menusexit_label">Beenden</string>
+	
+	<string name="miscsettings_label">Andere Einstellungen</string>
+	<string name="locsettings_label">Standort Einstellungen</string>
+	
+	<string name="serviceIsRunning_txt">Service läuft</string>
+	
+	<string name="greetings_txt">Hallo</string>
+	<string name="NoLocationAvailable_txt">möglicherweise der GPS-Empfänger ausgeschaltet ist, deshalb kein Ortung angezeigt wird. Bitte später erneut versuchen.</string>
+	<string name="here_txt">bin gerade hier</string>
+	
+	<string name="messageDeliveredTo_txt">Nachricht wurde gesendet an</string>	
+	<string name="messageNotDeliveredTo_txt">Nachricht wurde nicht gesendet an</string>
+	<string name="messageWithProblems_txt">Probleme beim Erstellen des Nachricht</string>	
+</resources>

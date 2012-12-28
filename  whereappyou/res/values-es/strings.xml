@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">WhereAppYou</string>
+    
+    <string name="incognitomode_txt">No muestra notificaciones.</string>
+	<string name="incognitomode_label">Modo Incognito</string>
+    <string name="respWhenLocAvailable_txt">Responde una solicitud cuando la Ubicación esté disponible o inmediatamente incluso si no está disponible.</string>
+	<string name="respWhenLocAvailable_label">Respuesta Ubicación disponible</string>
+    <string name="voiceNotifications_txt">Habla cuando una notificacion ha sido enviada.</string>
+	<string name="voiceNotifications_label">Notificacion de Voz</string>
+    <string name="onlyFavs_txt">Responde una Solicitud SOLAMENTE si el contacto ha sido marcado como favorito.</string>
+	<string name="onlyFavs_label">Solo Favoritos</string>
+    <string name="notifyWhenLocked_txt">Muestra la notificacion de envio cuando el teléfono esta bloqueado.</string>
+	<string name="notifyWhenLocked_label">Notifique cuando bloqueado</string>
+		
+	<string name="menusettings_label">Seteos</string>
+	<string name="menusexit_label">Salir</string>
+	
+	<string name="miscsettings_label">Otros Seteos</string>
+	<string name="locsettings_label">Preferencias de Ubicación</string>
+	
+	<string name="serviceIsRunning_txt">El Servicio está funcionando</string>
+	
+	<string name="greetings_txt">Hola</string>
+	<string name="NoLocationAvailable_txt">posiblemente, el receptor GPS se encuentra apagado, por lo tanto la Ubicación no se encuentra disponible. Por favor, inténtelo de nuevo más tarde.</string>
+	<string name="here_txt">Estoy aquí</string>	
+	
+	<string name="messageDeliveredTo_txt">Mensaje enviado a</string>
+	<string name="messageNotDeliveredTo_txt">Mensaje no enviado a</string>
+	<string name="messageWithProblems_txt">Problemas creando Mensaje a enviar</string>	
+</resources>
