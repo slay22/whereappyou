@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+	<string name="app_name">WhereAppYou</string>
+	    
+    <string name="incognitomode_txt">Does not show Notifications.</string>
+	<string name="incognitomode_label">Incognito Mode</string>
+    <string name="respWhenLocAvailable_txt">Responds a Request first when Location becomes available or immediately even its not available.</string>
+	<string name="respWhenLocAvailable_label">Answer on Loc. Available</string>
+    <string name="voiceNotifications_txt">Speaks when a notification was sent.</string>
+	<string name="voiceNotifications_label">Voice Notifications</string>
+    <string name="onlyFavs_txt">Responds to a Request only if the contact its starred.</string>
+	<string name="onlyFavs_label">Only to Favourites</string>
+    <string name="notifyWhenLocked_txt">Shows sent Notificacion when the Phone its locked.</string>
+	<string name="notifyWhenLocked_label">Notify when locked</string>
+		
+	<string name="menusettings_label">Settings</string>
+	<string name="menusexit_label">Exit</string>
+	
+	<string name="miscsettings_label">Other Settings</string>
+	<string name="locsettings_label">Location Preferences</string>
+	
+	<string name="serviceIsRunning_txt">Service is Running</string>		
+	
+	<string name="greetings_txt">Hello</string>
+	<string name="NoLocationAvailable_txt">possibly, the GPS receiver is turned off, therefore no Location is available. Please try again later.</string>
+	<string name="here_txt">I am here</string>		
+	
+	<string name="messageDeliveredTo_txt">Message Sent to</string>
+	<string name="messageNotDeliveredTo_txt">Message not delivered to</string>
+	<string name="messageWithProblems_txt">Problems creating Message to deliver</string>
+</resources>
