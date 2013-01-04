@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Locale;
 
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
 
 import android.app.Notification;
 //import android.app.Notification.Builder;
@@ -33,6 +35,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.database.Cursor;
 //import android.location.Criteria;
 import android.location.Address;
@@ -195,6 +198,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        else
 	        	stopSelf();
 	        
+	        /****************************************************************************
+	         * Changed to START_NOT_STICKY in case of a problem, shouldn't be restarted,
+	         * instead we wait for a new call of startService(), which means that a new 
+	         * Request SMS has arrived. 
+	         **************************************************************************/
 	        return START_NOT_STICKY; //START_STICKY;
 	   }
 
@@ -292,40 +300,60 @@ public class WhereAppYouService extends Service implements LocationListener,
 //       }
 	   
        
-       @SuppressWarnings("deprecation")
        private void SetNotification(String message)
        {
-    		if (!m_IncognitoMode)    	
+           // set up the notification and start foreground if not Incognito mode
+    	    if (null == m_NotificationManager)
+    	    	m_NotificationManager = (NotificationManager) getBaseContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    
+			m_NotificationManager.cancelAll();
+		        	    
+    		if (m_IncognitoMode)
     		{
-	           // set up the notification and start foreground
-	           String ns = Context.NOTIFICATION_SERVICE;
-	           if (null == m_NotificationManager)
-	        	   m_NotificationManager = (NotificationManager) getBaseContext().getSystemService(ns);
-	
-	           Intent notificationIntent = new Intent(this, MainActivity.class);
+    			stopForeground(true);    			
+    		}
+    		else
+    		{
+		       Intent notificationIntent = new Intent(this, MainActivity.class);
 	           PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+	           Resources res = getResources();
 	           
-	           Notification not = new Notification(R.drawable.ic_launcher, "WhereAppYou", System.currentTimeMillis());
 	           Context context = getApplicationContext();
-	           CharSequence contentTitle = "WhereAppYou"; //getResources().getString(R.string.app_name);
+	           CharSequence contentTitle = res.getString(R.string.app_name);
 	           CharSequence contentText = message;
-	           not.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-	
-	           m_NotificationManager.notify(1, not);
-	           this.startForeground(1, not);
+
+           
+	           Builder builder = new NotificationCompat.Builder(context);
+
+	           builder.setContentIntent(contentIntent)
+	        	            .setSmallIcon(R.drawable.ic_launcher)
+	        	            //.setLargeIcon(BitmapFactory.decodeResource(res, R.drawable.some_big_img))
+	        	            //.setTicker(res.getString(R.string.ticker))
+	        	            .setWhen(System.currentTimeMillis())
+	        	            .setAutoCancel(true)
+	        	            .setContentTitle(contentTitle)
+	        	            .setContentText(contentText);
+	        	
+	           Notification not = builder.build();
+
+	           m_NotificationManager.notify(1, not);       
+	           
+	           startForeground(1, not);
 	           
     		   if (m_VoiceNotifications && m_ttsInitialied)
     		   {
     			   m_Tts.speak(message, TextToSpeech.QUEUE_FLUSH, null);
     		   }
-    		   
+
+			   //TODO : I don't like how this is done, we must re-check this feature before release.
     		   if (m_NotifyWhenLocked)
     		   {
 	    		   try
 	    		   {
 	    			   Time today = new Time(Time.getCurrentTimezone());
 	    			   today.setToNow();    			   
-	    			   Settings.System.putString(getBaseContext().getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, String.format("%s %s", message, today.format("%k:%M:%S")));
+	    			   Settings.System.putString(context.getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, String.format("%s %s", message, today.format("%k:%M:%S")));
 	    		   }
 	    		   catch (Exception e)
 	    		   {
@@ -333,17 +361,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 	    		   }
     		   }
     		}
-    		else 
-    			stopForeground(true);
-    		
-//           m_builder = new Notification.Builder(getBaseContext());
-//           m_builder.setContentTitle(getResources().getString(R.string.app_name));
-//           m_builder.setContentText("Service Started");
-//           m_builder.setSmallIcon(R.drawable.ic_launcher);
-//           m_builder.setWhen(System.currentTimeMillis());
-//           m_builder.setContentIntent(contentIntent);
-//           
-//           m_NotificationManager.notify(1, m_builder.build());
        }
     
       private class TaskProcessSms extends AsyncTask<Object, Object, Boolean>
@@ -387,7 +404,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
 						
 						if (m_RespondWhenLocationAvailable)
-							wait(); //Actually i don't know which problems (CPU/battery) this option can carry, we need to test on real devices.
+							wait(); //Actually i don't know which problems (CPU/battery) this option may carry, we need to test on real devices.
 						else
 							wait(DEFAULT_WAIT_TIME);
 						
@@ -533,7 +550,7 @@ public class WhereAppYouService extends Service implements LocationListener,
     	  return String.valueOf(distance) + unit;
       }
       
-      //Returns a Geocoded Adress from coordinates.
+      //Returns a Geocoded Address from coordinates.
       public String getAddress(double latitude, double longitude)
       {
     	  String result = "";
@@ -677,7 +694,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
 	           } 
 		   }
-		   catch (IllegalArgumentException e)  // http://code.google.com/p/android/issues/detail?id=21237 vielleicht?
+		   catch (IllegalArgumentException e)  // http://code.google.com/p/android/issues/detail?id=21237, maybe?
 		   {
 			   e.printStackTrace();
 			   Log.v("WhereAppYouService", System.currentTimeMillis() + "Exception requesting updates -- may be emulator issue");
