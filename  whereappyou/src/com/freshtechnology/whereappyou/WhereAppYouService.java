@@ -73,6 +73,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   private boolean m_OnlyFavourites = true;
 	   private boolean m_RespondWhenLocationAvailable = false;
 	   private boolean m_NotifyWhenLocked = false;
+
+	   private WhereAppYouDatabaseHelper m_Database;
 	   
 	   //private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
 	   private final static long DEFAULT_WAIT_TIME = 45 * 1000;
@@ -120,6 +122,8 @@ public class WhereAppYouService extends Service implements LocationListener,
                 m_RespondWhenLocationAvailable = m_Preferences.getBoolean("respWhenLocAvailable", false); 
 //         	   	m_MinTime = m_Preferences.getLong("locnMinTime", DEFAULT_MIN_TIME); 
 //         	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", DEFAULT_MIN_DISTANCE);
+                
+    	        m_Database = WhereAppYouApplication.getDB();
 	        } 
 	        catch (Exception e) 
 	        {
@@ -127,7 +131,7 @@ public class WhereAppYouService extends Service implements LocationListener,
                 Log.e("WhereAppYouService", "prefs failed to load " + e.getMessage());
 	        }
 
-	        m_LocManager = (LocationManager) getBaseContext().getSystemService(LOCATION_SERVICE);
+	        m_LocManager = (LocationManager) WhereAppYouApplication.getAppContext().getSystemService(LOCATION_SERVICE);
 	        
 	        SetNotification(getString(R.string.serviceIsRunning_txt));	        
 	   }
@@ -148,6 +152,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 		        	m_PayLoad = (String)bundle.get("PayLoad");
 		        	
 		        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
+		        	// UPDATE : partially implemented using favorites/starred.
 		        	
 		        	boolean answer = true;
 		        	if (m_OnlyFavourites)
@@ -209,25 +214,27 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   @Override
 	   public void onDestroy() 
 	   {
-	        Log.v("WhereAppYouService", System.currentTimeMillis() + ": WhereAppYouService dead.");
-
-	        clearTasks();
-	        
-	        if (m_Tts != null) 
-	        {
-	        	m_Tts.stop();
-	        	m_Tts.shutdown();
-	        }
-	        
-	        unregisterListeners();
-	        
-        	m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
-        	m_Preferences = null;
-	        
-	        stopForeground(true);
+	        cleanAll();
 	        
 	        super.onDestroy();
+	        
+	        Log.v("WhereAppYouService", System.currentTimeMillis() + ": WhereAppYouService dead.");
 	   }
+
+	   private void unregisterPreferencesListener() 
+	   {
+		   m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
+	       m_Preferences = null;
+	   }
+
+	   private void clearTTS() 
+	   {
+			if (m_Tts != null) 
+			{
+				m_Tts.stop();
+				m_Tts.shutdown();
+			}
+		}
 
 		private void clearTasks() 
 		{
@@ -245,29 +252,26 @@ public class WhereAppYouService extends Service implements LocationListener,
        @Override
        protected void finalize() throws Throwable 
        {
-    	   clearTasks();
-
-	        if (m_Tts != null) 
-	        {
-	        	m_Tts.stop();
-	        	m_Tts.shutdown();
-	        }
-    	   
-	       if (null != m_LocManager)
-	       {
-	    	   m_LocManager.removeUpdates(this);
-	       }
-	       
-	       if (null != m_Preferences)
-	       {
-	    	   m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
-	       }
-	       
-	       stopForeground(true);
+    	   cleanAll();
 	       
 	       super.finalize();
+	       
+	       Log.v("WhereAppYouService", System.currentTimeMillis() + ": WhereAppYouService finilzed.");
+	       
        }
-	   
+
+       private void cleanAll() 
+       {
+    	   clearTasks();
+
+	       clearTTS();
+    	   
+	       unregisterListeners();
+	        
+	       unregisterPreferencesListener();
+	       
+	       stopForeground(true);
+       }
 	   
 //   	   private Criteria GetFineCriteria()
 //       {
@@ -304,7 +308,7 @@ public class WhereAppYouService extends Service implements LocationListener,
        {
            // set up the notification and start foreground if not Incognito mode
     	    if (null == m_NotificationManager)
-    	    	m_NotificationManager = (NotificationManager) getBaseContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    	    	m_NotificationManager = (NotificationManager) WhereAppYouApplication.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     
 			m_NotificationManager.cancelAll();
 		        	    
@@ -319,7 +323,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 
 	           Resources res = getResources();
 	           
-	           Context context = getApplicationContext();
+	           Context context = WhereAppYouApplication.getAppContext();
 	           CharSequence contentTitle = res.getString(R.string.app_name);
 	           CharSequence contentText = message;
 
