@@ -16,6 +16,8 @@
 
 package com.freshtechnology.whereappyou;
 
+import java.util.Locale;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -44,14 +46,23 @@ public class SMSReceiver extends BroadcastReceiver
 		            for (int i=0; i<msgs.length; i++){
 		                msgs[i] = SmsMessage.createFromPdu((byte[])pdus[i]);
 		                String payLoad = msgs[i].getMessageBody();
-		                if(payLoad.toUpperCase().contains("WHEREAPPYOU")) {
+		                if(payLoad.toUpperCase(Locale.getDefault()).contains("WHEREAPPYOU")) 
+		                {
 		                    abortBroadcast();
 
-		                    //TODO : Logging here requests in a database/start another service?
 			        		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": SMSReceiver got a Message.");
-		                    
+
+			        		String phoneNumber = msgs[i].getOriginatingAddress(); 
+
+			        		//Saving data to the database and start the service in case it's not already started.
+			        		WhereAppYouDatabaseHelper database = WhereAppYouApplication.getDB();
+			        		
+			        		database.openDataBase();
+			        		database.insertNewRequest(phoneNumber, payLoad);
+			        		database.close();
+			        		
 		                    Intent service = new Intent(context, WhereAppYouService.class);
-		                    service.putExtra("PhoneNumber", msgs[i].getOriginatingAddress());
+		                    service.putExtra("PhoneNumber", phoneNumber);
 		                    service.putExtra("PayLoad", payLoad);
 		                    context.startService(service);		                    
 		                }            

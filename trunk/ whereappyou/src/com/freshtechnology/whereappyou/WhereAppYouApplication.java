@@ -17,44 +17,51 @@
 package com.freshtechnology.whereappyou;
 
 import android.app.Application;
+import android.content.Context;
 import android.util.Log;
 
-public class WhereAppYouApplication extends Application {
-
+public class WhereAppYouApplication extends Application 
+{
+	private static Context context;
     public static final String APP_NAME = "WhereAppYou";
 
-    //private DeviceDB dataHelper;
+    private static WhereAppYouDatabaseHelper m_DataHelper;
 
+    public static Context getAppContext() 
+    {
+        return WhereAppYouApplication.context;
+    }    
+
+    public static WhereAppYouDatabaseHelper getDB() 
+    {
+    	return m_DataHelper;
+    }
+    
     @Override
     public void onCreate() 
     {
     	super.onCreate();
-    	Log.d(APP_NAME, "APPLICATION onCreate");
+    	
+    	Log.v(APP_NAME, System.currentTimeMillis() + ": APPLICATION created");
+    	
+    	WhereAppYouApplication.context = getApplicationContext();
+    	
         try 
         {
-        	//this.dataHelper = new DeviceDB(this);
+        	m_DataHelper = new WhereAppYouDatabaseHelper(WhereAppYouApplication.context);
         } 
         catch (Exception e) 
         {
 			e.printStackTrace();
-			Log.e(APP_NAME, "APPLICATION onCreate failed to open DB");
+			Log.e(APP_NAME, System.currentTimeMillis() + ": APPLICATION onCreate failed to open DB");
         }
     }
 
     @Override
     public void onTerminate() 
     {
-    	Log.d(APP_NAME, "APPLICATION onTerminate");
+    	Log.v(APP_NAME, System.currentTimeMillis() + ": APPLICATION terminated");
         super.onTerminate();
     }
-
-//    public DeviceDB getDeviceDB() 
-//    {
-//    	return this.dataHelper;
-//    }
-//	public void setDeviceDB(DeviceDB dataHelper) 
-//	{
-//		this.dataHelper = dataHelper;
-//	}
 }
 

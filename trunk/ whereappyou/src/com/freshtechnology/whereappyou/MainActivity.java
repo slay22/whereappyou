@@ -73,7 +73,7 @@ public class MainActivity extends ListActivity
     
     private void startPrefs()
     {
-		Intent intent = new Intent(getBaseContext(), WhereAppYouPrefsActivity.class);
+		Intent intent = new Intent(WhereAppYouApplication.getAppContext(), WhereAppYouPrefsActivity.class);
 		int requestCode = 0; 
 		startActivityForResult(intent, requestCode);
 		displaySharedPreferences();
@@ -99,7 +99,7 @@ public class MainActivity extends ListActivity
     
     private ArrayList<Map<String, String>> buildData() 
     {
-    	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+    	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
     	
         boolean incognitoMode = prefs.getBoolean("incognitoMode", false);      
         boolean voiceNotifications = prefs.getBoolean("voiceNotifications", false);
