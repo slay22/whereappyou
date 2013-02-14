@@ -17,7 +17,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 {
 	 //The Android's default system path of your application database.
-	private static String DB_PATH = "/data/data/com.freshtechnology.whereappyou/databases/";
+	
+	private static String DB_PATH = "/data/data/%s/databases/";
 	private static String DB_NAME = "whereappyou";
 	 
 	private SQLiteDatabase m_DataBase;
@@ -28,7 +29,12 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 	public static final String KEY_DATE = "Date";
 	public static final String KEY_NUMBER = "Number";
 	public static final String KEY_PROCESSED = "processed";
-	 
+	
+	private String getDatabasePath()
+	{
+		return String.format("%s%s", String.format(DB_PATH, m_Context.getPackageName()), DB_NAME);
+	}
+	
 	/**
 	  * Constructor
 	  * Takes and keeps a reference of the passed context in order to access to the application assets and resources.
@@ -39,6 +45,7 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 		super(context, DB_NAME, null, 1);
 		m_Context = context;
 	}
+	
 	@Override
 	public void onCreate(SQLiteDatabase arg0) 
 	{
@@ -94,7 +101,7 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 	 
 		try
 		{
-			String path = DB_PATH + DB_NAME;
+			String path = getDatabasePath();
 			checkDB = SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READONLY);
 		}
 		catch(SQLiteException e)
@@ -118,7 +125,7 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 	{
 		InputStream input = m_Context.getAssets().open(DB_NAME);
 	 
-		String outFileName = DB_PATH + DB_NAME;
+		String outFileName = getDatabasePath();
 	 
 		OutputStream output = new FileOutputStream(outFileName);
 	 
