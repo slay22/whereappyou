@@ -62,11 +62,14 @@ public class WhereAppYouService extends Service implements LocationListener,
 						SharedPreferences.OnSharedPreferenceChangeListener,
 						TextToSpeech.OnInitListener
 {
-	   private String m_Contact = "";
-	   private String m_PayLoad = "";
+//	   private String m_Contact = "";
+//	   private String m_PayLoad = "";
 	   //private String m_Provider = "";
 	   private LocationManager m_LocManager;
 	   private static Location m_Location;
+	   private static Intent m_PassiveIntent;
+	   private static PendingIntent m_LocationListenerPassivePendingIntent;
+
 	   //private boolean m_GpsEnabled = false;
 	   private boolean m_IncognitoMode = false;
 	   private boolean m_VoiceNotifications = false;
@@ -131,7 +134,11 @@ public class WhereAppYouService extends Service implements LocationListener,
                 Log.e("WhereAppYouService", "prefs failed to load " + e.getMessage());
 	        }
 
+	        m_PassiveIntent = new Intent(this, PassiveLocationChangedReceiver.class);
+	        m_LocationListenerPassivePendingIntent = PendingIntent.getBroadcast(this, 0, m_PassiveIntent, PendingIntent.FLAG_UPDATE_CURRENT);	        
 	        m_LocManager = (LocationManager) WhereAppYouApplication.getAppContext().getSystemService(LOCATION_SERVICE);
+	        
+	        registerListeners();
 	        
 	        SetNotification(getString(R.string.serviceIsRunning_txt));	        
 	   }
@@ -146,24 +153,31 @@ public class WhereAppYouService extends Service implements LocationListener,
 		        Bundle bundle = intent.getExtras();
 		        if (null != bundle)
 		        {
-			        registerListeners();	    
+			        //registerListeners();	    
 		        	
-		        	m_Contact = (String)bundle.get("PhoneNumber");
-		        	m_PayLoad = (String)bundle.get("PayLoad");
+		        	m_Location = (Location)bundle.get("Location");
 		        	
-		        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
-		        	// UPDATE : partially implemented using favorites/starred.
+//		        	m_Contact = (String)bundle.get("PhoneNumber");
+//		        	m_PayLoad = (String)bundle.get("PayLoad");
 		        	
-		        	boolean answer = true;
-		        	if (m_OnlyFavourites)
+		        	if (null != m_Location)
 		        	{
-		        		answer = isFavContact(m_Contact);
-		        	}
-		        	
-		        	if (answer)
-		        	{
-			        	processData();
-			        	signalTasks();
+		        		
+			        	processData();		        		
+			        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
+			        	// UPDATE : partially implemented using favorites/starred.
+			        	
+//			        	boolean answer = true;
+//			        	if (m_OnlyFavourites)
+//			        	{
+//			        		answer = isFavContact(m_Contact);
+//			        	}
+//			        	
+//			        	if (answer)
+//			        	{
+//				        	processData();
+//				        	signalTasks();
+//			        	}
 		        	}
 		        	
 	//	        	CountDownTimer procData = new CountDownTimer(21000, 7000) 
@@ -371,21 +385,24 @@ public class WhereAppYouService extends Service implements LocationListener,
       {
     	  private StringBuilder message = null;
     	  private String ToWhom = "";
-//    	  private String PayLoad = "";
+    	  private String Contact = "";
+    	  private String PayLoad = "";
 //    	  private Context mainContext = null;
 
 		@Override
 		protected Boolean doInBackground(Object... params) 
 		{
 //			mainContext = (Context)params[0];
-//			ToWhom = (String)params[1];
+//			String _ToWhom = ;
 //			PayLoad = (String)params[2];
 			
 			//TODO : Translate all messages to "current" language.
 			
 			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
 			
-			ToWhom = GetName(m_Contact);			
+			Contact = (String)params[0];
+			ToWhom = GetName(Contact);
+			
 			boolean result = false;
 			
 			if (null == m_Location)
@@ -453,7 +470,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 						message.append(addressgeocoded);
 					}
 
-					if ( "" != m_PayLoad)
+					if ( "" != PayLoad)
 					{
 						// TODO : Add here extra information requested
 						/*------------------------------------------------
@@ -464,7 +481,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 						 ---------------------------------------------- */
 						
 						//Distance To Point.
-						String dtp = m_PayLoad.toUpperCase(Locale.getDefault());
+						String dtp = PayLoad.toUpperCase(Locale.getDefault());
 						if (dtp.contains("DTP"))
 						{
 							int index = dtp.indexOf("DTP="); 
@@ -505,9 +522,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 					ArrayList<String> parts = sms.divideMessage(message.toString());
 					
 					if (parts.size() > 1)
-						sms.sendMultipartTextMessage(m_Contact, null, parts, null, null);	
+						sms.sendMultipartTextMessage(Contact, null, parts, null, null);	
 					else
-						sms.sendTextMessage(m_Contact, null, message.toString(), null, null);						
+						sms.sendTextMessage(Contact, null, message.toString(), null, null);						
+					
+					m_Database.openDataBase();
+					m_Database.updateRequest(Contact);
+					m_Database.close();
 					
 //					 String SENT = "SMS_SENT";
 //					 String DELIVERED = "SMS_DELIVERED";
@@ -531,7 +552,7 @@ public class WhereAppYouService extends Service implements LocationListener,
         	else
         		SetNotification(getString(R.string.messageWithProblems_txt)); 
         	
-        	unregisterListeners();
+        	//unregisterListeners();
         }
       }
       
@@ -598,10 +619,46 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   private void processData()
 	   {
 		   AdjustLocation();
+		   
+		   m_Database.openDataBase();
+		   
+		   Cursor cursorRequests = m_Database.getNotProcessedRequests();
+		   
+		   ArrayList<String> requests = new ArrayList<String>(); 
+		   
+		   if (cursorRequests.moveToFirst()) 
+		   {
+			   boolean _answer = true;
+			   String _Contact = "";
+			   
+			   do 
+			   {
+				   _answer = true;
+				   _Contact = cursorRequests.getString(cursorRequests.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
 
-		   TaskProcessSms _Task = new TaskProcessSms();
-		   _Task.execute("");
-		   m_TaskList.add(_Task);
+				   // TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
+			       // UPDATE : partially implemented using favorites/starred.
+			       if (m_OnlyFavourites)
+			       {
+			    	   _answer = isFavContact(_Contact);
+			       }
+
+			       if (_answer)
+			       {
+			    	   requests.add(_Contact);
+			       }
+			       	
+		       } while (cursorRequests.moveToNext());
+		    }
+		   
+		   m_Database.close();
+
+		   for (String _Contact : requests)
+		   {
+	 		   TaskProcessSms _Task = new TaskProcessSms();
+			   _Task.execute(_Contact);
+			   //m_TaskList.add(_Task);
+		   }
 	   }
 	   
 	   //Returns the name of the caller, searching in the contact List
@@ -659,43 +716,24 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
 		   try
 		   {
-//	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
-//	           {
-//	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-//	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, m_MinTime, m_MinDistance, this);
-//	           }
-//	           else
-//	           {
-//		           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
-//		           {
-//		        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-//		        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, m_MinTime, m_MinDistance, this);
-//		           }
-//		           else if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
-//		           {
-//		        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
-//		        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, m_MinTime, m_MinDistance, this);
-//		           } 
-//	           }
-			   
 			   unregisterListeners();
 			   
 	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, this);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
 	           }
 			   
 	           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-	        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
 	           }
 	           
 	           if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
-	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
 	           } 
 		   }
 		   catch (IllegalArgumentException e)  // http://code.google.com/p/android/issues/detail?id=21237, maybe?
@@ -711,7 +749,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
 		   try
 		   {
-			   m_LocManager.removeUpdates(this);
+			   //unregisterReceiver(m_PassiveIntent);
+			   m_LocManager.removeUpdates(m_LocationListenerPassivePendingIntent);
 		   }
 		   catch (Exception e) 
 		   {
@@ -811,19 +850,19 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   
 	   private void signalTasks() 
 	   {
-		   if (null != m_Location)
-		   {
-			   if (!m_TaskList.isEmpty())
-			   {
-				   for (TaskProcessSms _Task : m_TaskList) 
-				   {
-					   synchronized (_Task)
-					   {
-						   _Task.notifyAll();
-					   }
-				   }
-			   }
-		   }
+//		   if (null != m_Location)
+//		   {
+//			   if (!m_TaskList.isEmpty())
+//			   {
+//				   for (TaskProcessSms _Task : m_TaskList) 
+//				   {
+//					   synchronized (_Task)
+//					   {
+//						   _Task.notifyAll();
+//					   }
+//				   }
+//			   }
+//		   }
 	   }
 	   
 	   @Override
