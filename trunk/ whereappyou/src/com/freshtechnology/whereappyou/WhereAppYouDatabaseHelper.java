@@ -9,6 +9,7 @@ import java.util.Date;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -23,7 +24,6 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 	 
 	private SQLiteDatabase m_DataBase;
 	private Context m_Context;
-	
 	
 	public static final String KEY_ROWID = "_id";
 	public static final String KEY_DATE = "Date";
@@ -158,5 +158,19 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 		
 		return (m_DataBase.insert(DB_NAME, null, values) > -1);
 	}
+
+	public boolean updateRequest(String Contact)
+	{
+		ContentValues values = new ContentValues();
+		values.put(KEY_PROCESSED, true);
+		return (1 == m_DataBase.update(DB_NAME, values, KEY_NUMBER + " = ?", new String[] { Contact }));
+	}
 	
+	public Cursor getNotProcessedRequests()
+	{
+		String[] columns = new String[] { KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED };
+		String[] values = new String[] { String.valueOf(false) }; 
+		
+		return m_DataBase.query(DB_NAME, columns, KEY_PROCESSED + "=?", values, null, null, KEY_DATE); 
+	}
 }
