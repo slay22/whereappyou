@@ -114,7 +114,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	m_Tts = new TextToSpeech(this, this);
 	        	
 		        //m_Application = (WhereAppYouApplication)getApplication();
-	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
 	        	m_Preferences.registerOnSharedPreferenceChangeListener(this);
 	        	
                 m_IncognitoMode = m_Preferences.getBoolean("incognitoMode", false);      
@@ -134,8 +134,8 @@ public class WhereAppYouService extends Service implements LocationListener,
                 Log.e("WhereAppYouService", "prefs failed to load " + e.getMessage());
 	        }
 
-	        m_PassiveIntent = new Intent(this, PassiveLocationChangedReceiver.class);
-	        m_LocationListenerPassivePendingIntent = PendingIntent.getBroadcast(this, 0, m_PassiveIntent, PendingIntent.FLAG_UPDATE_CURRENT);	        
+	        m_PassiveIntent = new Intent(WhereAppYouApplication.getAppContext(), PassiveLocationChangedReceiver.class);
+	        m_LocationListenerPassivePendingIntent = PendingIntent.getBroadcast(WhereAppYouApplication.getAppContext(), 0, m_PassiveIntent, PendingIntent.FLAG_CANCEL_CURRENT);	        
 	        m_LocManager = (LocationManager) WhereAppYouApplication.getAppContext().getSystemService(LOCATION_SERVICE);
 	        
 	        registerListeners();
@@ -526,9 +526,9 @@ public class WhereAppYouService extends Service implements LocationListener,
 					else
 						sms.sendTextMessage(Contact, null, message.toString(), null, null);						
 					
-					m_Database.openDataBase();
+					//m_Database.openDataBase();
 					m_Database.updateRequest(Contact);
-					m_Database.close();
+					//m_Database.close();
 					
 //					 String SENT = "SMS_SENT";
 //					 String DELIVERED = "SMS_DELIVERED";
@@ -620,7 +620,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
 		   AdjustLocation();
 		   
-		   m_Database.openDataBase();
+		   //m_Database.openDataBase();
 		   
 		   Cursor cursorRequests = m_Database.getNotProcessedRequests();
 		   
@@ -651,7 +651,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 		       } while (cursorRequests.moveToNext());
 		    }
 		   
-		   m_Database.close();
+		   //m_Database.close();
 
 		   for (String _Contact : requests)
 		   {
@@ -718,12 +718,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   {
 			   unregisterListeners();
 			   
-	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
-	           {
-	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
-	           }
-			   
 	           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
@@ -734,7 +728,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
 	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
-	           } 
+	           }
+	           
+	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
+	           {
+	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
+	           }
 		   }
 		   catch (IllegalArgumentException e)  // http://code.google.com/p/android/issues/detail?id=21237, maybe?
 		   {
