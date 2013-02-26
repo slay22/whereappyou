@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
 
     <application
-        android:name="com.freshtechnology.WhereAppYouApplication"
+        android:name=".WhereAppYouApplication"
         android:icon="@drawable/ic_launcher"
         android:label="WhereAppYou"
         android:theme="@style/AppTheme"
@@ -36,11 +36,18 @@
         
 		<service android:name="com.freshtechnology.whereappyou.WhereAppYouService"></service>
         
-	    <receiver android:name="com.freshtechnology.whereappyou.SMSReceiver">
+	    <receiver android:name=".SMSReceiver">
     		<intent-filter android:priority="999">
         		<action android:name="android.provider.Telephony.SMS_RECEIVED"></action>
     		</intent-filter>
     	</receiver>        
+    	
+		<receiver android:name=".PassiveLocationChangedReceiver">
+    		<intent-filter>
+    		    <action android:name="android.location.LocationManager.KEY_LOCATION_CHANGED" />
+    		</intent-filter>
+		</receiver>	    
+	    
         
     </application>
 
