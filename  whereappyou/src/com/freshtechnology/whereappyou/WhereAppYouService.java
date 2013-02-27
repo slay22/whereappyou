@@ -161,69 +161,22 @@ public class WhereAppYouService extends Service implements LocationListener,
 		        Bundle bundle = intent.getExtras();
 		        if (null != bundle)
 		        {
-			        //registerListeners();	    
-		        	
+		 
+		        	boolean _processData = false;
 		        	Location tempLoc = (Location)bundle.get("Location");
-		        	if (null == m_Location && null != tempLoc)
+		        	if ((null == m_Location && null != tempLoc) || (null != m_Location && null != tempLoc))
 		        	{
-		     		   m_Location = Utils.AdjustLocation(m_LocManager, tempLoc); 
+		     		   m_Location = Utils.AdjustLocation(m_LocManager, tempLoc);
+		     		  _processData = true;
 		        	}
-		        		
-//		        	m_Contact = (String)bundle.get("PhoneNumber");
-//		        	m_PayLoad = (String)bundle.get("PayLoad");
-		        	
-		        	if (null != m_Location)
+	        		
+		        	if (_processData)
 		        	{
 		        		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": WhereAppYouService location available process started.");
 
 			        	processData();		        		
-			        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
-			        	// UPDATE : partially implemented using favorites/starred.
-			        	
-//			        	boolean answer = true;
-//			        	if (m_OnlyFavourites)
-//			        	{
-//			        		answer = isFavContact(m_Contact);
-//			        	}
-//			        	
-//			        	if (answer)
-//			        	{
-//				        	processData();
-//				        	signalTasks();
-//			        	}
 		        	}
 		        	
-	//	        	CountDownTimer procData = new CountDownTimer(21000, 7000) 
-	//	        	{
-	//				  @Override
-	//				  public void onFinish() 
-	//				  {
-	//					  try 
-	//					  {
-	//						  processData();
-	//				      } 
-	//					  catch (Exception e) 
-	//				      {
-	//						  e.printStackTrace();
-	//				        //  Log.e(LOG_TAG, "Error " + e.getMessage());
-	//				      }
-	//				  }
-	//
-	//				  @Override
-	//                  public void onTick(long arg0) 
-	//				  {
-	//					  try 
-	//					  {
-	//						  Thread.yield();
-	//					  } 
-	//					  catch (Exception e) 
-	//					  {
-	//						  e.printStackTrace();
-	//						//  Log.e(LOG_TAG, "Error " + e.getMessage());
-	//					  }
-	//                  }
-	//	        	};
-	//	        	procData.start();
 					
 		        }
 	        }
