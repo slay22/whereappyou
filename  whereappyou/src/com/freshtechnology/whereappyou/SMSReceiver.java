@@ -56,14 +56,13 @@ public class SMSReceiver extends BroadcastReceiver
 
 			        		WhereAppYouDatabaseHelper database = WhereAppYouApplication.getDB();
 			        		
-			        		//database.openDataBase();
-			        		database.insertNewRequest(phoneNumber, payLoad);
-			        		//database.close();
+			        		Request _request = new Request(phoneNumber, payLoad);
+			        		database.insertNewRequest(_request);
 
 			        		//Saving data to the database.
 		                    Intent service = new Intent(context, WhereAppYouService.class);
-		                    service.putExtra("PhoneNumber", phoneNumber);
-		                    service.putExtra("PayLoad", payLoad);
+		                    service.putExtra("PhoneNumber", _request.getPhoneNumber());
+		                    service.putExtra("PayLoad", _request.getPayLoad());
 		                    context.startService(service);		                    
 		                }            
 		            }

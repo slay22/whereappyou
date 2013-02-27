@@ -28,6 +28,7 @@ import android.support.v4.app.NotificationCompat.Builder;
 
 import android.app.Notification;
 //import android.app.Notification.Builder;
+import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -82,7 +83,10 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   //private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
 	   private final static long DEFAULT_WAIT_TIME = 45 * 1000;
 	   //private final static float DEFAULT_MIN_DISTANCE  = 10;
-	   private final static int TWO_MINUTES = 2 * 60 * 1000;
+	   public final static int TWO_MINUTES = 2 * 60 * 1000;
+	   
+	   private final static int MAX_DISTANCE = 75;
+	   private final static long MAX_TIME = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
 	   
 //	   private long m_MinTime = 0;
 //	   private float m_MinDistance = 10;
@@ -135,7 +139,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        }
 
 	        m_PassiveIntent = new Intent(WhereAppYouApplication.getAppContext(), PassiveLocationChangedReceiver.class);
-	        m_LocationListenerPassivePendingIntent = PendingIntent.getBroadcast(WhereAppYouApplication.getAppContext(), 0, m_PassiveIntent, PendingIntent.FLAG_CANCEL_CURRENT);	        
+	        m_LocationListenerPassivePendingIntent = PendingIntent.getBroadcast(WhereAppYouApplication.getAppContext(), 0, m_PassiveIntent, PendingIntent.FLAG_UPDATE_CURRENT);	        
 	        m_LocManager = (LocationManager) WhereAppYouApplication.getAppContext().getSystemService(LOCATION_SERVICE);
 
     		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": WhereAppYouService location manager activated.");
@@ -159,8 +163,12 @@ public class WhereAppYouService extends Service implements LocationListener,
 		        {
 			        //registerListeners();	    
 		        	
-		        	m_Location = (Location)bundle.get("Location");
-		        	
+		        	Location tempLoc = (Location)bundle.get("Location");
+		        	if (null == m_Location && null != tempLoc)
+		        	{
+		     		   m_Location = Utils.AdjustLocation(m_LocManager, tempLoc); 
+		        	}
+		        		
 //		        	m_Contact = (String)bundle.get("PhoneNumber");
 //		        	m_PayLoad = (String)bundle.get("PayLoad");
 		        	
@@ -227,7 +235,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	         * instead we wait for a new call of startService(), which means that a new 
 	         * Request SMS has arrived. 
 	         **************************************************************************/
-	        return START_NOT_STICKY; //START_STICKY;
+	        return START_STICKY; //START_NOT_STICKY;
 	   }
 
 	   @Override
@@ -390,7 +398,7 @@ public class WhereAppYouService extends Service implements LocationListener,
       {
     	  private StringBuilder message = null;
     	  private String ToWhom = "";
-    	  private String Contact = "";
+    	  private Request Contact = null;
     	  private String PayLoad = "";
 //    	  private Context mainContext = null;
 
@@ -405,8 +413,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 			
 			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
 			
-			Contact = (String)params[0];
-			ToWhom = GetName(Contact);
+			Contact = (Request)params[0];
+			ToWhom = GetName(Contact.getPhoneNumber());
 			
 			boolean result = false;
 			
@@ -527,13 +535,11 @@ public class WhereAppYouService extends Service implements LocationListener,
 					ArrayList<String> parts = sms.divideMessage(message.toString());
 					
 					if (parts.size() > 1)
-						sms.sendMultipartTextMessage(Contact, null, parts, null, null);	
+						sms.sendMultipartTextMessage(Contact.getPhoneNumber(), null, parts, null, null);	
 					else
-						sms.sendTextMessage(Contact, null, message.toString(), null, null);						
+						sms.sendTextMessage(Contact.getPhoneNumber(), null, message.toString(), null, null);						
 					
-					//m_Database.openDataBase();
 					m_Database.updateRequest(Contact);
-					//m_Database.close();
 					
 //					 String SENT = "SMS_SENT";
 //					 String DELIVERED = "SMS_DELIVERED";
@@ -623,46 +629,26 @@ public class WhereAppYouService extends Service implements LocationListener,
       //Starts a new task
 	   private void processData()
 	   {
-		   AdjustLocation();
-		   
-		   //m_Database.openDataBase();
-		   
-		   Cursor cursorRequests = m_Database.getNotProcessedRequests();
-		   
-		   ArrayList<String> requests = new ArrayList<String>(); 
-		   
-		   if (cursorRequests.moveToFirst()) 
+		   List<Request> requests = m_Database.getNotProcessedRequests(); 
+
+		   for (Request _Contact : requests)
 		   {
 			   boolean _answer = true;
-			   String _Contact = "";
 			   
-			   do 
-			   {
-				   _answer = true;
-				   _Contact = cursorRequests.getString(cursorRequests.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
+			   // TODO : Check here to answer the SMS depending on the following options : 
+			   // allow all, allow only favorites, allow custom list
+		       // UPDATE : partially implemented using favorites/starred.
+		       if (m_OnlyFavourites)
+		       {
+		    	   _answer = isFavContact(_Contact.getPhoneNumber());
+		       }
 
-				   // TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
-			       // UPDATE : partially implemented using favorites/starred.
-			       if (m_OnlyFavourites)
-			       {
-			    	   _answer = isFavContact(_Contact);
-			       }
-
-			       if (_answer)
-			       {
-			    	   requests.add(_Contact);
-			       }
-			       	
-		       } while (cursorRequests.moveToNext());
-		    }
-		   
-		   //m_Database.close();
-
-		   for (String _Contact : requests)
-		   {
-	 		   TaskProcessSms _Task = new TaskProcessSms();
-			   _Task.execute(_Contact);
-			   //m_TaskList.add(_Task);
+		       if (_answer)
+		       {
+		 		   TaskProcessSms _Task = new TaskProcessSms();
+				   _Task.execute(_Contact);
+				   //m_TaskList.add(_Task);
+		       }
 		   }
 	   }
 	   
@@ -690,7 +676,7 @@ public class WhereAppYouService extends Service implements LocationListener,
            return result;
 	   }
 	   
-	   //Returns of the caller belongs to the favourite's list.
+	   //Returns if the caller belongs to the favourite's list.
 	   private boolean isFavContact(String number) 
 	   {
 		   boolean isStarred = false;
@@ -713,32 +699,32 @@ public class WhereAppYouService extends Service implements LocationListener,
            return isStarred;
 	   }
 
-       // Register the listeners with the Location Manager to receive location updates.
-	   // First try to use ONLY Passive Provider (this consumes less Battery and CPU)
+       // Register the listeners within the Location Manager to receive location updates.
+	   // The idea its to use the Passive Provider (this consumes less Battery and CPU)
 	   // and should return a "quick fix" when enabled if not then fall back to 
-	   // others Providers, trying to use GPS as LAST RESORT.
+	   // others Providers whenever they are enabled.
 	   private void registerListeners() 
 	   {
 		   try
 		   {
 			   unregisterListeners();
 			   
+//	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
+//	           {
+//	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+//	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
+//	           }
+			   
 	           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-	        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
 	           }
 	           
 	           if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
 	           {
 	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
-	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
-	           }
-	           
-	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
-	           {
-	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, m_LocationListenerPassivePendingIntent);
+	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
 	           }
 		   }
 		   catch (IllegalArgumentException e)  // http://code.google.com/p/android/issues/detail?id=21237, maybe?
@@ -764,95 +750,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   }
 	   }
 	   
-	   // finds the most recent and most accurate locations
-	   private void AdjustLocation() 
-	   {
-		   List<String> providers = m_LocManager.getAllProviders();
-		   Location tempLoc = null;
-		   
-		   try 
-		   {
-			   // Iterate through all the providers on the system to get a quick fix
-			   // keeping note of the most accurate result within the acceptable time limit.
-			   for (String provider: providers) 					   
-			   {
-				   tempLoc = m_LocManager.getLastKnownLocation(provider);
-
-				   if (tempLoc != null) 
-				   {
-					   if (isBetterLocation(tempLoc, m_Location))
-					   {
-						   m_Location = tempLoc;
-					   }
-				   }
-			   }
-		   } 
-		   catch (Exception e) 
-		   {
-			   e.printStackTrace();
-		   }
-	   }
-
-	   /** 
-	     * From the SDK documentation. Determines whether one Location reading is better than the current Location fix
-	     * 
-	     * @param location  The new Location that you want to evaluate
-	     * @param currentBestLocation  The current Location fix, to which you want to compare the new one
-	     * @return true if the location is better then the currentBestLocation
-	     */
-	   protected boolean isBetterLocation(Location location, Location currentBestLocation) 
-	   {
-		   boolean result = false;
-		   
-	        if (null != currentBestLocation) 
-	        {
-		        long timeDelta = location.getTime() - currentBestLocation.getTime();
-		        boolean isSignificantlyNewer = (timeDelta > TWO_MINUTES);
-		        boolean isSignificantlyOlder = (timeDelta < -TWO_MINUTES);
-		        boolean isNewer = (timeDelta > 0);
-
-		        if (isSignificantlyNewer) 
-		        {
-		        	result = true;
-		        } 
-		        else if (isSignificantlyOlder) 
-		        {
-		        	result =  false;
-		        }
-
-		        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
-		        boolean isLessAccurate = (accuracyDelta > 0);
-		        boolean isMoreAccurate = (accuracyDelta < 0);
-		        boolean isSignificantlyLessAccurate = (accuracyDelta > 200);
-		        boolean isFromSameProvider = isSameProvider(location.getProvider(), currentBestLocation.getProvider());
-
-		        if (isMoreAccurate) 
-		        {
-		        	result = true;
-		        } 
-		        else if (isNewer && !isLessAccurate) 
-		        {
-		        	result = true;
-		        } 
-		        else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) 
-		        {
-		        	result = true;
-		        }
-		        else result = false;
-	        }
-	        
-	        return result;
-	    }	
-	   
-	    private boolean isSameProvider(String provider1, String provider2) 
-	    {
-	        if (null == provider1) 
-	        {
-	            return (null == provider2);
-	        }
-	        return provider1.equals(provider2);
-	    }
-	   
 	   private void signalTasks() 
 	   {
 //		   if (null != m_Location)
@@ -873,8 +770,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   @Override
 	   public void onLocationChanged(Location location) 
 	   {
-		   m_Location = location;
-		   AdjustLocation();
+		   m_Location = Utils.AdjustLocation(m_LocManager, location); 
 		   signalTasks();
 	   }
 		

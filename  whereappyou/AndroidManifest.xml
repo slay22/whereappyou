@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.SEND_SMS"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="android.permission.RECEIVER_BOOT_COMPLETED"/>
 
     <application
         android:name=".WhereAppYouApplication"
@@ -48,7 +49,12 @@
     		</intent-filter>
 		</receiver>	    
 	    
-        
+		<receiver android:name=".BootReceiver">
+    		<intent-filter>
+    		    <action android:name="android.intent.action.BOOT_COMPLETED" />
+    		</intent-filter>
+		</receiver>	    
+		
     </application>
 
 </manifest>

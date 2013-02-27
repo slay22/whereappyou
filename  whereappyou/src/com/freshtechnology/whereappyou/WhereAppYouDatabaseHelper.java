@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -160,13 +162,13 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 //				m_Database =  this.getWritableDatabase();
 	}	
 	
-	public boolean insertNewRequest(String phoneNumber, String payload)
+	public boolean insertNewRequest(Request request)
 	{
 		Date today = new Date();
 		
 		ContentValues values = new ContentValues();
 		values.put(KEY_DATE, DateFormat.getDateTimeInstance().format(today));
-		values.put(KEY_NUMBER, phoneNumber);
+		values.put(KEY_NUMBER, request.getPhoneNumber());
 		values.put(KEY_PROCESSED, false);
 		
 		SQLiteDatabase m_DataBase = this.getWritableDatabase();
@@ -176,25 +178,55 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 		return result;
 	}
 
-	public boolean updateRequest(String phoneNumber)
+	public boolean updateRequest(Request request)
 	{
 		ContentValues values = new ContentValues();
 		values.put(KEY_PROCESSED, true);
 
 		SQLiteDatabase m_DataBase = this.getWritableDatabase();
-		boolean result = (1 == m_DataBase.update(TABLE_NAME, values, KEY_NUMBER + " = ?", new String[] { phoneNumber }));
+		boolean result = (1 == m_DataBase.update(TABLE_NAME, values, KEY_NUMBER + " = ?", new String[] { request.getPhoneNumber() }));
 		m_DataBase.close();
 		return result; 
 	}
 	
-	public Cursor getNotProcessedRequests()
+	public List<Request> getNotProcessedRequests()
 	{
 		String[] columns = new String[] { KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED };
-		String[] values = new String[] { String.valueOf(false) }; 
+		String[] values = new String[] { String.valueOf(0) }; 
 
 		SQLiteDatabase m_DataBase = this.getWritableDatabase();
-		Cursor result = m_DataBase.query(TABLE_NAME, columns, KEY_PROCESSED + "=?", values, null, null, KEY_DATE);
+		
+		Cursor cursor = m_DataBase.query(TABLE_NAME, columns, KEY_PROCESSED + " = ?", values, null, null, KEY_DATE + " asc");
+		
+		List<Request> requests = new ArrayList<Request>(); 
+		
+		if (cursor.moveToFirst()) 
+		{
+			do 
+			{
+				int _ID = 0;
+				Date _DateReceived = null;
+				String _Contact = "";
+				boolean _Processed = false;
+				try
+				{
+					_ID = cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_ROWID));
+					_DateReceived = DateFormat.getDateTimeInstance().parse(cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_DATE)));
+					_Contact = cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
+					_Processed = (cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_PROCESSED)) == 1);
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+				
+				requests.add(new Request(_ID, _DateReceived, _Contact, _Processed));
+				
+			} while (cursor.moveToNext());
+		}
+		
 		m_DataBase.close();
-		return result; 
+		
+		return requests; 
 	}
 }
