@@ -1,6 +1,5 @@
 package com.freshtechnology.whereappyou;
 
-import java.util.List;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
