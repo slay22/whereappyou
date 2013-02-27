@@ -137,9 +137,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        m_PassiveIntent = new Intent(WhereAppYouApplication.getAppContext(), PassiveLocationChangedReceiver.class);
 	        m_LocationListenerPassivePendingIntent = PendingIntent.getBroadcast(WhereAppYouApplication.getAppContext(), 0, m_PassiveIntent, PendingIntent.FLAG_CANCEL_CURRENT);	        
 	        m_LocManager = (LocationManager) WhereAppYouApplication.getAppContext().getSystemService(LOCATION_SERVICE);
+
+    		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": WhereAppYouService location manager activated.");
 	        
 	        registerListeners();
-	        
+
+    		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": WhereAppYouService listeners registered.");
+
 	        SetNotification(getString(R.string.serviceIsRunning_txt));	        
 	   }
 	   
@@ -162,7 +166,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 		        	
 		        	if (null != m_Location)
 		        	{
-		        		
+		        		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": WhereAppYouService location available process started.");
+
 			        	processData();		        		
 			        	// TODO : Check here to answer the SMS depending on the options to allow all, allow only favorites, allow custom list
 			        	// UPDATE : partially implemented using favorites/starred.
