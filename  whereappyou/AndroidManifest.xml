@@ -43,12 +43,19 @@
     		</intent-filter>
     	</receiver>        
     	
+   		<receiver android:name=".PowerStateChangedReceiver">
+     		<intent-filter>
+       			<action android:name="android.intent.action.ACTION_BATTERY_LOW"/>
+                <action android:name="android.intent.action.ACTION_BATTERY_OKAY"/>
+     		</intent-filter>
+    	</receiver>
+	    	    
 		<receiver android:name=".PassiveLocationChangedReceiver">
     		<intent-filter>
     		    <action android:name="android.location.LocationManager.KEY_LOCATION_CHANGED" />
     		</intent-filter>
 		</receiver>	    
-	    
+			    
 		<receiver android:name=".BootReceiver">
     		<intent-filter>
     		    <action android:name="android.intent.action.BOOT_COMPLETED" />
