@@ -55,11 +55,12 @@ public class SMSReceiver extends BroadcastReceiver
 			        		String phoneNumber = msgs[i].getOriginatingAddress(); 
 
 			        		WhereAppYouDatabaseHelper database = WhereAppYouApplication.getDB();
-			        		
+
+			        		//Saving data to the database.
 			        		Request _request = new Request(phoneNumber, payLoad);
 			        		database.insertNewRequest(_request);
 
-			        		//Saving data to the database.
+			        		//Starts the service in case there's a Location available or to start the Location manager
 		                    Intent service = new Intent(context, WhereAppYouService.class);
 		                    service.putExtra("PhoneNumber", _request.getPhoneNumber());
 		                    service.putExtra("PayLoad", _request.getPayLoad());

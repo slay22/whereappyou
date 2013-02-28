@@ -52,5 +52,17 @@ public class Request
 	{
 		return m_PayLoad;
 	}
+	
+	public boolean isFavContact() 
+	{
+		boolean result = false;
+		
+		if ("" != m_PhoneNumber)
+		{
+			result = Utils.isFavContact(m_PhoneNumber);
+		}
+		
+		return result;
+	}
 
 }

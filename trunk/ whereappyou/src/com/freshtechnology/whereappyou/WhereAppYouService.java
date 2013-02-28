@@ -16,7 +16,6 @@
 
 package com.freshtechnology.whereappyou;
 
-import java.io.IOException;
 //import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,19 +31,16 @@ import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ContentResolver;
+//import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+//import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
-import android.database.Cursor;
 //import android.location.Criteria;
-import android.location.Address;
-import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.AsyncTask;
 //import android.os.AsyncTask.Status;
 //import android.os.AsyncTask.Status;
@@ -52,7 +48,6 @@ import android.os.Bundle;
 //import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.provider.ContactsContract.PhoneLookup;
 import android.provider.Settings;
 import android.telephony.SmsManager;
 import android.text.format.Time;
@@ -63,20 +58,17 @@ public class WhereAppYouService extends Service implements LocationListener,
 						SharedPreferences.OnSharedPreferenceChangeListener,
 						TextToSpeech.OnInitListener
 {
-//	   private String m_Contact = "";
-//	   private String m_PayLoad = "";
-	   //private String m_Provider = "";
 	   private LocationManager m_LocManager;
 	   private static Location m_Location;
 	   private static Intent m_PassiveIntent;
 	   private static PendingIntent m_LocationListenerPassivePendingIntent;
 
-	   //private boolean m_GpsEnabled = false;
 	   private boolean m_IncognitoMode = false;
 	   private boolean m_VoiceNotifications = false;
 	   private boolean m_OnlyFavourites = true;
 	   private boolean m_RespondWhenLocationAvailable = false;
 	   private boolean m_NotifyWhenLocked = false;
+	   private boolean m_BatteryLow = false;
 
 	   private WhereAppYouDatabaseHelper m_Database;
 	   
@@ -87,20 +79,21 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   
 	   private final static int MAX_DISTANCE = 75;
 	   private final static long MAX_TIME = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
+	   private static final String POINT_LATITUDE_KEY = "POINT_LATITUDE_KEY";
+	   private static final String POINT_LONGITUDE_KEY = "POINT_LONGITUDE_KEY";
 	   
 //	   private long m_MinTime = 0;
 //	   private float m_MinDistance = 10;
 	   
-//	   private WhereAppYouApplication m_Application = null;
 	   private SharedPreferences m_Preferences = null;
 	   private NotificationManager m_NotificationManager = null;
+//	   private BroadcastReceiver m_PowerStateChangedReceiver = null;
 //	   private Builder m_builder = null;
 	   
 	   private TextToSpeech m_Tts = null;
 	   private boolean m_ttsInitialied = false;
 	   private List<TaskProcessSms> m_TaskList;
    
-	   
 	   public IBinder onBind(Intent intent) 
 	   {
 	        return null;
@@ -113,11 +106,16 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        
 	        try 
 	        {
+	        	//TODO : TEST!!!!
+	        	//In case that Manifest registration doesn't work.
+//	        	IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_LOW);
+//	        	m_PowerStateChangedReceiver = new PowerStateChangedReceiver(); 
+//	        	registerReceiver(m_PowerStateChangedReceiver, filter);
+	        	
 	        	m_TaskList = new ArrayList<TaskProcessSms>(); 
 	   
 	        	m_Tts = new TextToSpeech(this, this);
 	        	
-		        //m_Application = (WhereAppYouApplication)getApplication();
 	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
 	        	m_Preferences.registerOnSharedPreferenceChangeListener(this);
 	        	
@@ -131,6 +129,9 @@ public class WhereAppYouService extends Service implements LocationListener,
 //         	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", DEFAULT_MIN_DISTANCE);
                 
     	        m_Database = WhereAppYouApplication.getDB();
+    	        
+    	        //We retrieve the last known location in case of service crash.
+    	        getLastSavedKnowLocation();    	        
 	        } 
 	        catch (Exception e) 
 	        {
@@ -161,12 +162,34 @@ public class WhereAppYouService extends Service implements LocationListener,
 		        Bundle bundle = intent.getExtras();
 		        if (null != bundle)
 		        {
-		 
+		        	boolean _batteryLow = false;
+		        	try
+		        	{
+		        		_batteryLow = Boolean.parseBoolean(bundle.get("BatteryLow").toString());
+		        	}
+		        	catch (Exception e)
+		        	{
+		        		e.printStackTrace();
+		        	}
+		        	
+		        	//Only re-register Location Listeners either when a change has happened
+		        	if ((_batteryLow && !m_BatteryLow) || (!_batteryLow && m_BatteryLow))
+		        		registerListeners();
+		        	
 		        	boolean _processData = false;
 		        	Location tempLoc = (Location)bundle.get("Location");
-		        	if ((null == m_Location && null != tempLoc) || (null != m_Location && null != tempLoc))
+		        	
+		        	if ((null == m_Location && null != tempLoc) || 
+		        		(null != m_Location && null != tempLoc) || 
+		        		(null != m_Location && null == tempLoc))
 		        	{
-		     		   m_Location = Utils.AdjustLocation(m_LocManager, tempLoc);
+		        		tempLoc = Utils.AdjustLocation(m_LocManager, tempLoc);
+		        		
+		        		if (null != tempLoc)
+		        		{
+		        			m_Location = tempLoc; 
+		        		}
+		        		
 		     		  _processData = true;
 		        	}
 	        		
@@ -176,8 +199,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 
 			        	processData();		        		
 		        	}
-		        	
-					
 		        }
 	        }
 	        else
@@ -186,9 +207,9 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        /****************************************************************************
 	         * Changed to START_NOT_STICKY in case of a problem, shouldn't be restarted,
 	         * instead we wait for a new call of startService(), which means that a new 
-	         * Request SMS has arrived. 
+	         * Request SMS has arrived or a the Location has changed. 
 	         **************************************************************************/
-	        return START_STICKY; //START_NOT_STICKY;
+	        return START_NOT_STICKY; //START_STICKY
 	   }
 
 	   @Override
@@ -201,7 +222,34 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        Log.v("WhereAppYouService", System.currentTimeMillis() + ": WhereAppYouService dead.");
 	   }
 
-	   private void unregisterPreferencesListener() 
+    private void saveLastKnowLocation() 
+	{
+    	if (null != m_Location)
+    	{
+	        SharedPreferences.Editor prefsEditor = m_Preferences.edit();
+	        prefsEditor.putFloat(POINT_LATITUDE_KEY, (float)m_Location.getLatitude());
+	        prefsEditor.putFloat(POINT_LONGITUDE_KEY, (float)m_Location.getLongitude());
+	        prefsEditor.commit();
+	        
+	        m_Location = null;
+    	}
+	}
+
+    private void getLastSavedKnowLocation() 
+	{
+		double lat = m_Preferences.getFloat(POINT_LATITUDE_KEY, 0);
+		double lon = m_Preferences.getFloat(POINT_LONGITUDE_KEY, 0);
+    	
+		//We retrieve the location ONLY if it was saved before and there's no location available 
+    	if (null == m_Location && (0 != lat && 0 != lon))
+    	{
+    		m_Location = new Location("LAST_KNOWN_LOCATION");
+    		m_Location.setLatitude(lat);
+    		m_Location.setLongitude(lon);
+    	}
+	}
+    
+	private void unregisterPreferencesListener() 
 	   {
 		   m_Preferences.unregisterOnSharedPreferenceChangeListener(this);
 	       m_Preferences = null;
@@ -237,15 +285,19 @@ public class WhereAppYouService extends Service implements LocationListener,
 	       super.finalize();
 	       
 	       Log.v("WhereAppYouService", System.currentTimeMillis() + ": WhereAppYouService finilzed.");
-	       
        }
 
        private void cleanAll() 
        {
+    	   //We save the last known location in case of service crash.
+    	   saveLastKnowLocation();    	   
+    	   
     	   clearTasks();
 
 	       clearTTS();
     	   
+	       //unregisterReceiver(m_PowerStateChangedReceiver);
+	       
 	       unregisterListeners();
 	        
 	       unregisterPreferencesListener();
@@ -283,7 +335,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 //    	   return criteria;
 //       }
 	   
-       
        private void SetNotification(String message)
        {
            // set up the notification and start foreground if not Incognito mode
@@ -307,7 +358,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 	           CharSequence contentTitle = res.getString(R.string.app_name);
 	           CharSequence contentText = message;
 
-           
 	           Builder builder = new NotificationCompat.Builder(context);
 
 	           builder.setContentIntent(contentIntent)
@@ -347,27 +397,24 @@ public class WhereAppYouService extends Service implements LocationListener,
     		}
        }
     
-      private class TaskProcessSms extends AsyncTask<Object, Object, Boolean>
+      private class TaskProcessSms extends AsyncTask<Request, Void, Boolean>
       {
     	  private StringBuilder message = null;
     	  private String ToWhom = "";
     	  private Request Contact = null;
     	  private String PayLoad = "";
-//    	  private Context mainContext = null;
 
 		@Override
-		protected Boolean doInBackground(Object... params) 
+		protected Boolean doInBackground(Request... params) 
 		{
 //			mainContext = (Context)params[0];
 //			String _ToWhom = ;
 //			PayLoad = (String)params[2];
 			
-			//TODO : Translate all messages to "current" language.
-			
 			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
 			
-			Contact = (Request)params[0];
-			ToWhom = GetName(Contact.getPhoneNumber());
+			Contact = params[0];//(Request)params[0];
+			ToWhom = Utils.GetName(Contact.getPhoneNumber());
 			
 			boolean result = false;
 			
@@ -389,7 +436,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 						//of the sky to work correctly. Thus, signal reception can be degraded by tall buildings, bridges,
 						//tunnels, mountains, etc. Also, moving around while locking onto several satellites makes it harder
 						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
-						
 						if (m_RespondWhenLocationAvailable)
 							wait(); //Actually i don't know which problems (CPU/battery) this option may carry, we need to test on real devices.
 						else
@@ -404,7 +450,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 			  
 			try 
 			{
-				
 				message = new StringBuilder();
 					
 				if (null == m_Location)
@@ -429,7 +474,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 				        
 					message.append(String.format("%s ", getString(R.string.here_txt)));
 
-					String addressgeocoded = getAddress(lat, lon);
+					String addressgeocoded = Utils.getAddress(lat, lon);
 					
 					if ("" != addressgeocoded)
 					{
@@ -452,8 +497,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 						{
 							int index = dtp.indexOf("DTP="); 
 							String[] dtpParams = dtp.substring(index).split(",");
-							message.append(getDistanceString(dtpParams[0], dtpParams[1]));
-							message.append(" entfernt");
+							message.append(Utils.getDistanceString(m_Location, dtpParams[0], dtpParams[1]));
+							message.append(" entfernt"); // TODO : Add this to the localization files
 						}
 					}
 					
@@ -494,17 +539,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 					
 					m_Database.updateRequest(Contact);
 					
-//					 String SENT = "SMS_SENT";
-//					 String DELIVERED = "SMS_DELIVERED";
-
-//				     PendingIntent sentPI = PendingIntent.getBroadcast( mainContext, 0, new Intent(SENT), 0);
-//				     PendingIntent deliveredPI = PendingIntent.getBroadcast( mainContext, 0, new Intent(DELIVERED), 0);					
-					
-					//sms.sendMultipartTextMessage(m_Contact, null, parts, sentPI, deliveredPI);
-					
-					
-//					sms.sendTextMessage(m_Contact, null, message.toString(), null, null);
-					
 					SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom));
         		}
         		catch (Exception e) 
@@ -515,67 +549,7 @@ public class WhereAppYouService extends Service implements LocationListener,
         	}
         	else
         		SetNotification(getString(R.string.messageWithProblems_txt)); 
-        	
-        	//unregisterListeners();
         }
-      }
-      
-      //Return the Distance between current location and the requested one.
-      private String getDistanceString(String Lat, String Lon) 
-      {
-    	  Location pointLocation = new Location("POINT_LOCATION");
-    	  pointLocation.setLatitude(Float.valueOf(Lat));
-    	  pointLocation.setLongitude(Float.valueOf(Lon));
-		
-    	  float distance = m_Location.distanceTo(pointLocation);
-		
-    	  String unit = " m";
-    	  if (distance > 1000)
-    	  {
-    		  distance = Math.abs(distance / 1000); 
-    		  unit = " km";
-    	  }
-		
-    	  return String.valueOf(distance) + unit;
-      }
-      
-      //Returns a Geocoded Address from coordinates.
-      public String getAddress(double latitude, double longitude)
-      {
-    	  String result = "";
-          List<Address> address = null;
-          Geocoder gc = new Geocoder(getBaseContext());
-          
-          try 
-          {
-              address = gc.getFromLocation(latitude, longitude, 1);
-          } 
-          catch (IOException e) 
-          {
-              Log.v("WhereAppYouService", System.currentTimeMillis() + ": getAddress unable to get address");              
-          }
-
-          if (address == null || address.size() == 0) {
-              Log.v("WhereAppYouService", System.currentTimeMillis() + ": getAddress unable to parse address");              
-              result = "";
-          }
-          else
-          {
-	          Address a = address.get(0);
-	
-	          StringBuilder b = new StringBuilder();
-	          for (int i = 0; i < a.getMaxAddressLineIndex(); i++) 
-	          {
-	              b.append(a.getAddressLine(i));
-	              if (i < (a.getMaxAddressLineIndex() - 1)) 
-	              {
-	                  b.append(" ");
-	              }
-	          }
-	          result = b.toString();
-          }
-          
-          return result;
       }
       
       
@@ -584,100 +558,67 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
 		   List<Request> requests = m_Database.getNotProcessedRequests(); 
 
-		   for (Request _Contact : requests)
+		   if (!requests.isEmpty())
 		   {
-			   boolean _answer = true;
-			   
-			   // TODO : Check here to answer the SMS depending on the following options : 
-			   // allow all, allow only favorites, allow custom list
-		       // UPDATE : partially implemented using favorites/starred.
-		       if (m_OnlyFavourites)
-		       {
-		    	   _answer = isFavContact(_Contact.getPhoneNumber());
-		       }
-
-		       if (_answer)
-		       {
-		 		   TaskProcessSms _Task = new TaskProcessSms();
-				   _Task.execute(_Contact);
-				   //m_TaskList.add(_Task);
-		       }
+			   for (Request _Contact : requests)
+			   {
+				
+				   Log.v("WhereAppYouService", String.format("ProcessData, Request %s", _Contact.getRowId()));
+				   
+				   boolean _answer = true;
+				   
+				   // TODO : Check here to answer the SMS depending on the following options : 
+				   // allow all, allow only favorites, allow custom list
+			       // UPDATE : partially implemented using favorites/starred.
+			       if (m_OnlyFavourites)
+			       {
+			    	   _answer = _Contact.isFavContact();//Utils.isFavContact(getContentResolver(),_Contact.getPhoneNumber());
+			       }
+	
+			       if (_answer)
+			       {
+			 		   TaskProcessSms _Task = new TaskProcessSms();
+					   _Task.execute(_Contact);
+					   //m_TaskList.add(_Task);
+			       }
+			   }
 		   }
-	   }
-	   
-	   //Returns the name of the caller, searching in the contact List
-	   private String GetName(String number) 
-	   {
-		   String result = number;
-		   try
-		   {
-	           ContentResolver cr = getContentResolver();
-	
-	           Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-	           Cursor c = cr.query(uri, new String[] { PhoneLookup.DISPLAY_NAME }, null, null, null);
-	
-	           if (c.moveToFirst()) 
-	           {
-                   String name = c.getString(c.getColumnIndex(PhoneLookup.DISPLAY_NAME));
-                   result = name;
-	           }       
-           }
-		   catch(Exception e) 
-	       {
-			   e.printStackTrace();
-	       }
-           return result;
-	   }
-	   
-	   //Returns if the caller belongs to the favourite's list.
-	   private boolean isFavContact(String number) 
-	   {
-		   boolean isStarred = false;
-		   try
-		   {
-	           ContentResolver cr = getContentResolver();
-	
-	           Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-	           Cursor c = cr.query(uri, new String[] { PhoneLookup.STARRED }, null, null, null);
-	
-	           if (c.moveToFirst()) 
-	           {
-                   isStarred = (c.getInt(c.getColumnIndex(PhoneLookup.STARRED)) == 1); 
-	           }       
-           }
-		   catch(Exception e) 
-	       {
-			   e.printStackTrace();
-	       }
-           return isStarred;
+		   else
+				Log.v("WhereAppYouService", " ProcessData, nothing to do!");
+			   
 	   }
 
        // Register the listeners within the Location Manager to receive location updates.
 	   // The idea its to use the Passive Provider (this consumes less Battery and CPU)
 	   // and should return a "quick fix" when enabled if not then fall back to 
-	   // others Providers whenever they are enabled.
+	   // GPS and NETWORK whenever they are enabled and if the Battery it's not in Low state.   
 	   private void registerListeners() 
 	   {
 		   try
 		   {
 			   unregisterListeners();
-			   
-//	           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
-//	           {
-//	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-//	        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
-//	           }
-			   
-	           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
-	           {
-	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-	        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
+
+	           if (!m_BatteryLow)
+	           {	  
+		           if (m_LocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) 
+		           {
+		        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+		        	   m_LocManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
+		           }
+		           
+		           if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
+		           {
+		        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
+		        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
+		           }
 	           }
-	           
-	           if (m_LocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) 
+	           else
 	           {
-	        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);        	   
-	        	   m_LocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
+		           if (m_LocManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)) 
+		           {
+		        	   m_Location = m_LocManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+		        	   m_LocManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, MAX_TIME, MAX_DISTANCE, m_LocationListenerPassivePendingIntent);
+		           }
 	           }
 		   }
 		   catch (IllegalArgumentException e)  // http://code.google.com/p/android/issues/detail?id=21237, maybe?
