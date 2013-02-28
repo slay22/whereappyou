@@ -16,8 +16,11 @@
 
 package com.freshtechnology.whereappyou;
 
+import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.Context;
+import android.os.Build;
+import android.os.StrictMode;
 import android.util.Log;
 
 public class WhereAppYouApplication extends Application 
@@ -37,12 +40,28 @@ public class WhereAppYouApplication extends Application
     	return m_DataHelper;
     }
     
-    @Override
+    @TargetApi(Build.VERSION_CODES.GINGERBREAD | Build.VERSION_CODES.HONEYCOMB)
+	@Override
     public void onCreate() 
     {
-    	super.onCreate();
-    	
     	Log.v(APP_NAME, System.currentTimeMillis() + ": APPLICATION created");
+    	
+    	if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.GINGERBREAD)
+    	{
+    		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+    	    	.detectAll()
+    	    	.penaltyLog()
+    	    	.penaltyDeath()
+    	    	.build());
+    		
+    		StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+    			.detectAll()
+    			.penaltyLog()
+    			.penaltyDeath()
+    			.build());     		
+    	}
+    	
+    	super.onCreate();
     	
     	WhereAppYouApplication.context = getApplicationContext();
     	

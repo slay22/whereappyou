@@ -19,9 +19,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 {
-	 //The Android's default system path of your application database.
-	
-	private static String DB_PATH = "/data/data/%s/databases/";
+	private static String DB_PATH = "/data/data/%s/databases/"; // TODO : Should we use Context.getFilesDir().getPath() ?
 	private static String DB_NAME = "whereappyou";
 	private static String TABLE_NAME = "requests";
 	private static final int DATABASE_VERSION = 1;
@@ -61,7 +59,8 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 	@Override
 	public void onCreate(SQLiteDatabase db) 
 	{
-		String CREATE_REQUESTS_TABLE = String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY, %s TEXT, %s TEXT, %s NUMERIC)", TABLE_NAME, KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED);		
+		String CREATE_REQUESTS_TABLE = String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY, %s TEXT, %s TEXT, %s NUMERIC)", 
+													 TABLE_NAME, KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED);		
         db.execSQL(CREATE_REQUESTS_TABLE);		
 	}
 	
@@ -154,8 +153,9 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 		output.flush();
 		output.close();
 		input.close();
+
 	}
-	 
+
 	public void openDataBase() throws SQLException
 	{
 //		if (null == m_DataBase || (null != m_DataBase &&  !m_DataBase.isOpen()) 
@@ -186,6 +186,7 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 		SQLiteDatabase m_DataBase = this.getWritableDatabase();
 		boolean result = (1 == m_DataBase.update(TABLE_NAME, values, KEY_NUMBER + " = ?", new String[] { request.getPhoneNumber() }));
 		m_DataBase.close();
+		
 		return result; 
 	}
 	
@@ -194,7 +195,7 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 		String[] columns = new String[] { KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED };
 		String[] values = new String[] { String.valueOf(0) }; 
 
-		SQLiteDatabase m_DataBase = this.getWritableDatabase();
+		SQLiteDatabase m_DataBase = this.getReadableDatabase();
 		
 		Cursor cursor = m_DataBase.query(TABLE_NAME, columns, KEY_PROCESSED + " = ?", values, null, null, KEY_DATE + " asc");
 		
@@ -224,6 +225,7 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 				
 			} while (cursor.moveToNext());
 		}
+		cursor.close();
 		
 		m_DataBase.close();
 		
