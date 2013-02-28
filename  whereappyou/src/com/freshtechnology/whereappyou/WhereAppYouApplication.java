@@ -50,6 +50,8 @@ public class WhereAppYouApplication extends Application
     	{
     		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
     	    	.detectAll()
+    	    	.permitDiskReads()
+    	    	.permitDiskWrites()
     	    	.penaltyLog()
     	    	.penaltyDeath()
     	    	.build());
