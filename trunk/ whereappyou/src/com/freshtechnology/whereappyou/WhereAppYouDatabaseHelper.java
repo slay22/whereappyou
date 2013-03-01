@@ -4,14 +4,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+//import java.text.DateFormat;
+//import java.util.ArrayList;
+//import java.util.Date;
+//import java.util.List;
 
-import android.content.ContentValues;
+//import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
+//import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -21,11 +21,11 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 {
 	private static String DB_PATH = "/data/data/%s/databases/"; // TODO : Should we use Context.getFilesDir().getPath() ?
 	private static String DB_NAME = "whereappyou";
-	private static String TABLE_NAME = "requests";
 	private static final int DATABASE_VERSION = 1;
 	//private SQLiteDatabase m_DataBase;
 	private Context m_Context;
-	
+
+	public static final String TABLE_NAME = "requests";
 	public static final String KEY_ROWID = "_id";
 	public static final String KEY_DATE = "Date";
 	public static final String KEY_NUMBER = "Number";
@@ -162,73 +162,73 @@ public class WhereAppYouDatabaseHelper extends SQLiteOpenHelper
 //				m_Database =  this.getWritableDatabase();
 	}	
 	
-	public boolean insertNewRequest(Request request)
-	{
-		Date today = new Date();
-		
-		ContentValues values = new ContentValues();
-		values.put(KEY_DATE, DateFormat.getDateTimeInstance().format(today));
-		values.put(KEY_NUMBER, request.getPhoneNumber());
-		values.put(KEY_PROCESSED, false);
-		
-		SQLiteDatabase m_DataBase = this.getWritableDatabase();
-		boolean result = (m_DataBase.insert(TABLE_NAME, null, values) > -1);
-		m_DataBase.close();
-		
-		return result;
-	}
-
-	public boolean updateRequest(Request request)
-	{
-		ContentValues values = new ContentValues();
-		values.put(KEY_PROCESSED, true);
-
-		SQLiteDatabase m_DataBase = this.getWritableDatabase();
-		boolean result = (1 == m_DataBase.update(TABLE_NAME, values, KEY_NUMBER + " = ?", new String[] { request.getPhoneNumber() }));
-		m_DataBase.close();
-		
-		return result; 
-	}
-	
-	public List<Request> getNotProcessedRequests()
-	{
-		String[] columns = new String[] { KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED };
-		String[] values = new String[] { String.valueOf(0) }; 
-
-		SQLiteDatabase m_DataBase = this.getReadableDatabase();
-		
-		Cursor cursor = m_DataBase.query(TABLE_NAME, columns, KEY_PROCESSED + " = ?", values, null, null, KEY_DATE + " asc");
-		
-		List<Request> requests = new ArrayList<Request>(); 
-		
-		if (cursor.moveToFirst()) 
-		{
-			do 
-			{
-				int _ID = 0;
-				Date _DateReceived = null;
-				String _Contact = "";
-				boolean _Processed = false;
-				try
-				{
-					_ID = cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_ROWID));
-					_DateReceived = DateFormat.getDateTimeInstance().parse(cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_DATE)));
-					_Contact = cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
-					_Processed = (cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_PROCESSED)) == 1);
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
-				
-				requests.add(new Request(_ID, _DateReceived, _Contact, _Processed));
-				
-			} while (cursor.moveToNext());
-		}
-		cursor.close();
-		
-		m_DataBase.close();
-		
-		return requests; 
-	}
+//	public boolean insertNewRequest(Request request)
+//	{
+//		Date today = new Date();
+//		
+//		ContentValues values = new ContentValues();
+//		values.put(KEY_DATE, DateFormat.getDateTimeInstance().format(today));
+//		values.put(KEY_NUMBER, request.getPhoneNumber());
+//		values.put(KEY_PROCESSED, false);
+//		
+//		SQLiteDatabase m_DataBase = this.getWritableDatabase();
+//		boolean result = (m_DataBase.insert(TABLE_NAME, null, values) > -1);
+//		m_DataBase.close();
+//		
+//		return result;
+//	}
+//
+//	public boolean updateRequest(Request request)
+//	{
+//		ContentValues values = new ContentValues();
+//		values.put(KEY_PROCESSED, true);
+//
+//		SQLiteDatabase m_DataBase = this.getWritableDatabase();
+//		boolean result = (1 == m_DataBase.update(TABLE_NAME, values, KEY_NUMBER + " = ?", new String[] { request.getPhoneNumber() }));
+//		m_DataBase.close();
+//		
+//		return result; 
+//	}
+//	
+//	public List<Request> getNotProcessedRequests()
+//	{
+//		String[] columns = new String[] { KEY_ROWID, KEY_DATE, KEY_NUMBER, KEY_PROCESSED };
+//		String[] values = new String[] { String.valueOf(0) }; 
+//
+//		SQLiteDatabase m_DataBase = this.getReadableDatabase();
+//		
+//		Cursor cursor = m_DataBase.query(TABLE_NAME, columns, KEY_PROCESSED + " = ?", values, null, null, KEY_DATE + " asc");
+//		
+//		List<Request> requests = new ArrayList<Request>(); 
+//		
+//		if (cursor.moveToFirst()) 
+//		{
+//			do 
+//			{
+//				int _ID = 0;
+//				Date _DateReceived = null;
+//				String _Contact = "";
+//				boolean _Processed = false;
+//				try
+//				{
+//					_ID = cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_ROWID));
+//					_DateReceived = DateFormat.getDateTimeInstance().parse(cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_DATE)));
+//					_Contact = cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
+//					_Processed = (cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_PROCESSED)) == 1);
+//				}
+//				catch (Exception e)
+//				{
+//					e.printStackTrace();
+//				}
+//				
+//				requests.add(new Request(_ID, _DateReceived, _Contact, _Processed));
+//				
+//			} while (cursor.moveToNext());
+//		}
+//		cursor.close();
+//		
+//		m_DataBase.close();
+//		
+//		return requests; 
+//	}
 }

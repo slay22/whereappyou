@@ -1,14 +1,33 @@
 package com.freshtechnology.whereappyou;
 
+import java.text.DateFormat;
 import java.util.Date;
 
-public class Request 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Request implements Parcelable 
 {
 	private int m_RowID;
 	private Date m_DateReceived;
 	private String m_PhoneNumber;
 	private boolean m_Processed;
 	private String m_PayLoad;
+	
+	public static final Parcelable.Creator<Request> CREATOR = new Parcelable.Creator<Request>() 
+    {
+		@Override
+		public Request createFromParcel(Parcel source) 
+		{
+			return new Request(source);  
+		}
+		 
+		@Override
+		public Request[] newArray(int size) 
+		{
+			return new Request[size];
+		}
+	};	
 	
 	public Request(int rowID, Date dateReceived, String phoneNumber, boolean processed)
 	{
@@ -21,12 +40,41 @@ public class Request
 
 	public Request(String phoneNumber, String payLoad)
 	{
-		m_RowID = 0;
-		m_DateReceived = null;
-		m_PhoneNumber = phoneNumber;
-		m_Processed = false;
-		m_PayLoad = payLoad;
+		Date today = new Date();
+		try
+		{
+			m_RowID = 0;
+			m_DateReceived = DateFormat.getDateTimeInstance().parse(today.toString());
+			m_PhoneNumber = phoneNumber;
+			m_Processed = false;
+			m_PayLoad = payLoad;
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
+	
+	//Parcelable constructor
+	public Request(Parcel in)
+	{
+		String[] data = new String[5];
+	 
+		in.readStringArray(data);
+		
+		try
+		{
+			m_RowID = Integer.parseInt(data[0]);
+			m_DateReceived =  DateFormat.getDateTimeInstance().parse(data[1]);
+			m_PhoneNumber = data[2];
+			m_Processed = Boolean.parseBoolean(data[3]); 
+			m_PayLoad = data[4];
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}	
 	
 	public int getRowId()
 	{
@@ -65,4 +113,20 @@ public class Request
 		return result;
 	}
 
+	@Override
+	public int describeContents() 
+	{
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) 
+	{
+		String _date = "";
+		
+		if (null != m_DateReceived)
+			_date = m_DateReceived.toString();
+		
+		dest.writeStringArray(new String[]{ String.valueOf(m_RowID), _date, m_PhoneNumber, String.valueOf(m_Processed), m_PayLoad });		
+	}
 }

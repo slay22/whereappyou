@@ -3,6 +3,9 @@ package com.freshtechnology.whereappyou;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import android.content.ContentResolver;
@@ -17,6 +20,64 @@ import android.util.Log;
 
 public class Utils 
 {
+	/** 
+     * Finds the caller's name, looking on the phone contact list
+     * 
+     * @param phonenumber to look for
+     * @return String name if found, the phone number in case not.
+     */
+	public static List<Request> getNotProcessedRequests()
+	{
+		String[] columns = new String[] { WhereAppYouDatabaseHelper.KEY_ROWID, 
+										  WhereAppYouDatabaseHelper.KEY_DATE, 
+										  WhereAppYouDatabaseHelper.KEY_NUMBER, 
+										  WhereAppYouDatabaseHelper.KEY_PROCESSED 
+										 };
+		
+		String[] values = new String[] { String.valueOf(0) }; 
+		List<Request> requests = new ArrayList<Request>();
+		
+		try
+		{
+			   ContentResolver contentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
+			   
+			   Cursor cursor = contentResolver.query(RequestsContentProvider.CONTENT_URI, columns, WhereAppYouDatabaseHelper.KEY_PROCESSED + " = ?", values, null);
+			   
+				if (cursor.moveToFirst()) 
+				{
+					do 
+					{
+						int _ID = 0;
+						Date _DateReceived = null;
+						String _Contact = "";
+						boolean _Processed = false;
+						try
+						{
+							_ID = cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_ROWID));
+							_DateReceived = DateFormat.getDateTimeInstance().parse(cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_DATE)));
+							_Contact = cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
+							_Processed = (cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_PROCESSED)) == 1);
+						}
+						catch (Exception e)
+						{
+							e.printStackTrace();
+						}
+						
+						requests.add(new Request(_ID, _DateReceived, _Contact, _Processed));
+						
+					} while (cursor.moveToNext());
+				}
+				cursor.close();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return requests; 
+	}
+	
+	
 	/** 
      * Finds the caller's name, looking on the phone contact list
      * 

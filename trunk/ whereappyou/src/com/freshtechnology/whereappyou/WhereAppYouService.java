@@ -32,6 +32,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 //import android.content.BroadcastReceiver;
+//import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 //import android.content.IntentFilter;
@@ -70,8 +71,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   private boolean m_NotifyWhenLocked = false;
 	   private boolean m_BatteryLow = false;
 
-	   private WhereAppYouDatabaseHelper m_Database;
-	   
 	   //private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
 	   private final static long DEFAULT_WAIT_TIME = 45 * 1000;
 	   //private final static float DEFAULT_MIN_DISTANCE  = 10;
@@ -128,8 +127,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 //         	   	m_MinTime = m_Preferences.getLong("locnMinTime", DEFAULT_MIN_TIME); 
 //         	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", DEFAULT_MIN_DISTANCE);
                 
-    	        m_Database = WhereAppYouApplication.getDB();
-    	        
     	        //We retrieve the last known location in case of service crash.
     	        getLastSavedKnowLocation();    	        
 	        } 
@@ -537,7 +534,10 @@ public class WhereAppYouService extends Service implements LocationListener,
 					else
 						sms.sendTextMessage(Contact.getPhoneNumber(), null, message.toString(), null, null);						
 					
-					m_Database.updateRequest(Contact);
+					//Update the current Contact sent.
+					Intent updateService = new Intent(WhereAppYouApplication.getAppContext(), RequestsUpdateService.class); 
+	        		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, Contact);
+	        		WhereAppYouApplication.getAppContext().startService(updateService);
 					
 					SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom));
         		}
@@ -556,8 +556,8 @@ public class WhereAppYouService extends Service implements LocationListener,
       //Starts a new task
 	   private void processData()
 	   {
-		   List<Request> requests = m_Database.getNotProcessedRequests(); 
-
+		   List<Request> requests = Utils.getNotProcessedRequests(); 
+		   
 		   if (!requests.isEmpty())
 		   {
 			   for (Request _Contact : requests)
