@@ -28,17 +28,16 @@ public class WhereAppYouApplication extends Application
 	private static Context context;
     public static final String APP_NAME = "WhereAppYou";
 
-    private static WhereAppYouDatabaseHelper m_DataHelper;
-
+    public static final String EXTRA_KEY_UPDATE = "EXTRA_KEY_UPDATE";
+    public static final String EXTRA_KEY_INSERT = "EXTRA_KEY_INSERT";
+    public static final String EXTRA_KEY_DELETE = "EXTRA_KEY_DELETE";
+    public static final String EXTRA_KEY_GET = "EXTRA_KEY_GET";
+    
     public static Context getAppContext() 
     {
         return WhereAppYouApplication.context;
     }    
 
-    public static WhereAppYouDatabaseHelper getDB() 
-    {
-    	return m_DataHelper;
-    }
     
     @TargetApi(Build.VERSION_CODES.GINGERBREAD | Build.VERSION_CODES.HONEYCOMB)
 	@Override
@@ -66,16 +65,6 @@ public class WhereAppYouApplication extends Application
     	super.onCreate();
     	
     	WhereAppYouApplication.context = getApplicationContext();
-    	
-        try 
-        {
-        	m_DataHelper = new WhereAppYouDatabaseHelper(WhereAppYouApplication.context);
-        } 
-        catch (Exception e) 
-        {
-			e.printStackTrace();
-			Log.e(APP_NAME, System.currentTimeMillis() + ": APPLICATION onCreate failed to open DB");
-        }
     }
 
     @Override
