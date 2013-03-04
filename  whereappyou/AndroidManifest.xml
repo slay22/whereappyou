@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.SEND_SMS"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
-    <uses-permission android:name="android.permission.RECEIVER_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:name=".WhereAppYouApplication"
@@ -36,6 +36,7 @@
 		</activity>        
         
 		<service android:name="com.freshtechnology.whereappyou.WhereAppYouService"></service>
+		<service android:name="com.freshtechnology.whereappyou.RequestsUpdateService"></service>
         
 	    <receiver android:name=".SMSReceiver">
     		<intent-filter android:priority="999">
@@ -56,11 +57,11 @@
     		</intent-filter>
 		</receiver>	    
 			    
-		<receiver android:name=".BootReceiver">
+		<!-- receiver android:name=".BootReceiver">
     		<intent-filter>
     		    <action android:name="android.intent.action.BOOT_COMPLETED" />
     		</intent-filter>
-		</receiver>	    
+		</receiver-->	    
 		
 		<provider android:authorities="com.freshtechnology.provider.requests" android:name=".RequestsContentProvider"/>
 		
