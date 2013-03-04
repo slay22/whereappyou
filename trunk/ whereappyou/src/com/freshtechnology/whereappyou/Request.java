@@ -44,10 +44,10 @@ public class Request implements Parcelable
 		try
 		{
 			m_RowID = 0;
-			m_DateReceived = DateFormat.getDateTimeInstance().parse(today.toString());
 			m_PhoneNumber = phoneNumber;
 			m_Processed = false;
 			m_PayLoad = payLoad;
+			m_DateReceived = DateFormat.getDateTimeInstance().parse(today.toString());
 		}
 		catch (Exception e)
 		{
@@ -58,17 +58,30 @@ public class Request implements Parcelable
 	//Parcelable constructor
 	public Request(Parcel in)
 	{
-		String[] data = new String[5];
-	 
-		in.readStringArray(data);
+//		String[] data = new String[5];
+//	 
+//		in.readStringArray(data);
 		
 		try
 		{
-			m_RowID = Integer.parseInt(data[0]);
-			m_DateReceived =  DateFormat.getDateTimeInstance().parse(data[1]);
-			m_PhoneNumber = data[2];
-			m_Processed = Boolean.parseBoolean(data[3]); 
-			m_PayLoad = data[4];
+//			m_RowID = Integer.parseInt(data[0]);
+//
+//			String _tmp = data[1];
+//			if (_tmp != "")
+//				m_DateReceived =  DateFormat.getDateTimeInstance().parse(_tmp);
+//			
+//			m_PhoneNumber = data[2];
+//			m_Processed = Boolean.parseBoolean(data[3]); 
+//			m_PayLoad = data[4];
+			
+			m_RowID = in.readInt();
+			m_PhoneNumber = in.readString();
+			m_Processed = Boolean.parseBoolean(in.readString());
+			m_PayLoad = in.readString();
+
+			String _tmp = in.readString();
+			if (_tmp != "")
+				m_DateReceived =  DateFormat.getDateTimeInstance().parse(_tmp);
 		}
 		catch (Exception e)
 		{
@@ -126,7 +139,13 @@ public class Request implements Parcelable
 		
 		if (null != m_DateReceived)
 			_date = m_DateReceived.toString();
+
+		dest.writeInt(m_RowID);
+		dest.writeString(m_PhoneNumber);		
+		dest.writeString(String.valueOf(m_Processed));
+		dest.writeString(m_PayLoad);
+		dest.writeString(_date);
 		
-		dest.writeStringArray(new String[]{ String.valueOf(m_RowID), _date, m_PhoneNumber, String.valueOf(m_Processed), m_PayLoad });		
+		//dest.writeStringArray(new String[]{ String.valueOf(m_RowID), _date, m_PhoneNumber, String.valueOf(m_Processed), m_PayLoad });		
 	}
 }

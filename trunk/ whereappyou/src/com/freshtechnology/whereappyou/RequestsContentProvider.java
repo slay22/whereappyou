@@ -17,7 +17,6 @@ public class RequestsContentProvider extends ContentProvider
 	public static final Uri CONTENT_URI = Uri.parse("content://com.freshtechnology.provider.requests/requests");
 
 	private SQLiteDatabase m_Database;	
-	private ContentResolver m_ContentResolver;
 	
 	private static final int REQUESTS = 1;
 	private static final int REQUEST_ID = 2;
@@ -35,9 +34,10 @@ public class RequestsContentProvider extends ContentProvider
 	{
         try 
         {
-        	WhereAppYouDatabaseHelper _DataHelper = new WhereAppYouDatabaseHelper(WhereAppYouApplication.getAppContext());
+        	//WhereAppYouDatabaseHelper _DataHelper = new WhereAppYouDatabaseHelper(WhereAppYouApplication.getAppContext());
+        	WhereAppYouDatabaseHelper _DataHelper = new WhereAppYouDatabaseHelper(getContext());
+        	
         	m_Database = _DataHelper.getWritableDatabase();
-        	m_ContentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
         } 
         catch (Exception e) 
         {
@@ -67,7 +67,7 @@ public class RequestsContentProvider extends ContentProvider
 		      default: throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
 
-		m_ContentResolver.notifyChange(uri, null);
+		getContext().getContentResolver().notifyChange(uri, null);
 		
 		return _count;
 	}
@@ -104,7 +104,7 @@ public class RequestsContentProvider extends ContentProvider
 	    //Return a URI to the newly inserted row on success.
 	    if (_rowID > 0) {
 	      _result = ContentUris.withAppendedId(CONTENT_URI, _rowID);
-	      m_ContentResolver.notifyChange(_result, null);
+	      getContext().getContentResolver().notifyChange(_result, null);
 	    }
 	    else
 	    	throw new SQLException("Failed to insert row into " + _result);
@@ -144,7 +144,7 @@ public class RequestsContentProvider extends ContentProvider
 		Cursor cursor = qb.query(m_Database, projection, selection, selectionArgs, null, null, orderBy);
 
 		//Register the contexts ContentResolver to be notified if the cursor result set changes.
-		cursor.setNotificationUri(m_ContentResolver, uri);
+		cursor.setNotificationUri(getContext().getContentResolver(), uri);
 		   
 		//Return a cursor to the query result.
 		return cursor;
@@ -170,7 +170,7 @@ public class RequestsContentProvider extends ContentProvider
 		    	  throw new IllegalArgumentException("Unknown URI " + uri);
 		}
 
-		m_ContentResolver.notifyChange(uri, null);
+		getContext().getContentResolver().notifyChange(uri, null);
 		
 		return _count;
 	}
