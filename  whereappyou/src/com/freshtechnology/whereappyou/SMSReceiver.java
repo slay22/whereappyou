@@ -57,10 +57,16 @@ public class SMSReceiver extends BroadcastReceiver
 			        		Request _request = new Request(phoneNumber, payLoad);
 
 			        		//Saving data to the database.
-			        		Intent updateService = new Intent(context, RequestsUpdateService.class); 
-			        		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, _request);
-			        		context.startService(updateService);
+//			        		Bundle sendBbundle = new Bundle();
+//			        		sendBbundle.putParcelable(WhereAppYouApplication.EXTRA_KEY_INSERT, _request);
 			        		
+			        		Intent updateService = new Intent(context, RequestsUpdateService.class);
+			        		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, _request);
+			        		
+//			        		updateService.putExtras(sendBbundle);
+			        		
+			        		context.startService(updateService);
+
 			        		//Starts the service in case there's a Location available or to start the Location manager
 		                    Intent service = new Intent(context, WhereAppYouService.class);
 		                    service.putExtra("PhoneNumber", _request.getPhoneNumber());

@@ -12,10 +12,8 @@ import java.text.DateFormat;
 public class RequestsUpdateService extends IntentService
 {
 	protected static String TAG = "RequestsUpdateService";
-	protected ContentResolver m_ContentResolver;
 
-
-	public RequestsUpdateService(String name) 
+	public RequestsUpdateService() 
 	{
 		super(TAG);
 		
@@ -26,42 +24,49 @@ public class RequestsUpdateService extends IntentService
 	public void onCreate() 
 	{
 	    super.onCreate();
-		m_ContentResolver = getContentResolver();
-	    
 	}
 	
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
-		Bundle extras = intent.getExtras();
-		Request _request = null;
-		
-		if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_INSERT)) 
+		if (null != intent)
 		{
-			_request = (Request)intent.getParcelableExtra(WhereAppYouApplication.EXTRA_KEY_INSERT);
+			//Bundle extras = intent.getExtras();
+			Request _request = null;
 			
-			Date today = new Date();
-			
-			ContentValues values = new ContentValues();
-			values.put(WhereAppYouDatabaseHelper.KEY_DATE, DateFormat.getDateTimeInstance().format(today));
-			values.put(WhereAppYouDatabaseHelper.KEY_NUMBER, _request.getPhoneNumber());
-			values.put(WhereAppYouDatabaseHelper.KEY_PROCESSED, false);
+			if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_INSERT)) 
+			{
+				_request = (Request)intent.getParcelableExtra(WhereAppYouApplication.EXTRA_KEY_INSERT);//extras.getParcelable(WhereAppYouApplication.EXTRA_KEY_INSERT);
+//				String _phoneNumber = (String)extras.get(WhereAppYouApplication.EXTRA_KEY_INSERT);
+//				_request = new Request(_phoneNumber, "");
+				
+				Date today = new Date();
+				
+				ContentValues values = new ContentValues();
+				values.put(WhereAppYouDatabaseHelper.KEY_DATE, DateFormat.getDateTimeInstance().format(today));
+				values.put(WhereAppYouDatabaseHelper.KEY_NUMBER, _request.getPhoneNumber());
+				values.put(WhereAppYouDatabaseHelper.KEY_PROCESSED, false);
+	
+				getContentResolver().insert(RequestsContentProvider.CONTENT_URI, values);
+			}
+			else if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_DELETE))
+			{
+				// TODO : Implement DELETE
+				//_request = (Request)extras.get(WhereAppYouApplication.EXTRA_KEY_DELETE);
+			}
+			else if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_UPDATE))
+			{
+				_request = (Request)intent.getParcelableExtra(WhereAppYouApplication.EXTRA_KEY_UPDATE);//extras.getParcelable(WhereAppYouApplication.EXTRA_KEY_UPDATE);
 
-			m_ContentResolver.insert(RequestsContentProvider.CONTENT_URI, values);
-		}
-		else if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_DELETE))
-		{
-			// TODO : Implement DELETE
-			_request = (Request)extras.get(WhereAppYouApplication.EXTRA_KEY_DELETE);
-		}
-		else if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_UPDATE))
-		{
-			_request = (Request)intent.getParcelableExtra(WhereAppYouApplication.EXTRA_KEY_UPDATE);
-			
-			ContentValues values = new ContentValues();
-			values.put(WhereAppYouDatabaseHelper.KEY_PROCESSED, true);
-			
-			m_ContentResolver.update(RequestsContentProvider.CONTENT_URI, values, WhereAppYouDatabaseHelper.KEY_NUMBER + " = ?", new String[] { _request.getPhoneNumber() });
+//				String _phoneNumber = (String)extras.get(WhereAppYouApplication.EXTRA_KEY_UPDATE);
+//				_request = new Request(_phoneNumber, "");
+				
+				
+				ContentValues values = new ContentValues();
+				values.put(WhereAppYouDatabaseHelper.KEY_PROCESSED, true);
+				
+				getContentResolver().update(RequestsContentProvider.CONTENT_URI, values, WhereAppYouDatabaseHelper.KEY_NUMBER + " = ?", new String[] { _request.getPhoneNumber() });
+			}
 		}
 	}
 

@@ -37,7 +37,6 @@ public class WhereAppYouApplication extends Application
     {
         return WhereAppYouApplication.context;
     }    
-
     
     @TargetApi(Build.VERSION_CODES.GINGERBREAD | Build.VERSION_CODES.HONEYCOMB)
 	@Override
