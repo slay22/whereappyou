@@ -3,10 +3,10 @@ package com.freshtechnology.whereappyou;
 import java.util.Date;
 
 import android.app.IntentService;
-import android.content.ContentResolver;
+//import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
-import android.os.Bundle;
+//import android.os.Bundle;
 import java.text.DateFormat;
 
 public class RequestsUpdateService extends IntentService
