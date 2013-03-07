@@ -7,7 +7,9 @@ import java.util.Locale;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
+import android.preference.PreferenceManager;
 import android.telephony.SmsManager;
 import android.util.Log;
 
@@ -32,6 +34,10 @@ public class ProcessRequestsService extends IntentService
 	{
 		if (intent == null) return;
 		
+		
+		SharedPreferences _Preferences = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
+		boolean _OnlyFavourites = _Preferences.getBoolean("onlyFavs", true);
+		
 		// TODO : get location from parameters here 
 		
 		List<Request> requests = Utils.getNotProcessedRequests(); 
@@ -48,11 +54,7 @@ public class ProcessRequestsService extends IntentService
 			   // TODO : Check here to answer the SMS depending on the following options : 
 			   // allow all, allow only favorites, allow custom list
 		       // UPDATE : partially implemented using favorites/starred.
-			   
-			   // TODO : Move Preferences to Application
-			   boolean m_OnlyFavourites = true;
-			   
-		       if (m_OnlyFavourites)
+		       if (_OnlyFavourites)
 		       {
 		    	   _answer = _Contact.isFavContact();
 		       }
@@ -151,7 +153,8 @@ public class ProcessRequestsService extends IntentService
 			Intent updateService = new Intent(WhereAppYouApplication.getAppContext(), RequestsUpdateService.class); 
     		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, Contact);
     		WhereAppYouApplication.getAppContext().startService(updateService);
-			
+			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Update Service called");
+    		
     		// TODO : Move Notification to Application 
     		
 			//SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom));

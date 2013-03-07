@@ -66,13 +66,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 
 	   private boolean m_IncognitoMode = false;
 	   private boolean m_VoiceNotifications = false;
-	   private boolean m_OnlyFavourites = true;
-	   private boolean m_RespondWhenLocationAvailable = false;
+	   //private boolean m_OnlyFavourites = true;
+	   //private boolean m_RespondWhenLocationAvailable = false;
 	   private boolean m_NotifyWhenLocked = false;
 	   private boolean m_BatteryLow = false;
 
 	   //private final static long DEFAULT_MIN_TIME = 5 * 60 * 1000; //5 minutes default
-	   private final static long DEFAULT_WAIT_TIME = 45 * 1000;
+	   //private final static long DEFAULT_WAIT_TIME = 45 * 1000;
 	   //private final static float DEFAULT_MIN_DISTANCE  = 10;
 	   public final static int TWO_MINUTES = 2 * 60 * 1000;
 	   
@@ -91,7 +91,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   
 	   private TextToSpeech m_Tts = null;
 	   private boolean m_ttsInitialied = false;
-	   private List<TaskProcessSms> m_TaskList;
+	   //private List<TaskProcessSms> m_TaskList;
    
 	   public IBinder onBind(Intent intent) 
 	   {
@@ -111,7 +111,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 //	        	m_PowerStateChangedReceiver = new PowerStateChangedReceiver(); 
 //	        	registerReceiver(m_PowerStateChangedReceiver, filter);
 	        	
-	        	m_TaskList = new ArrayList<TaskProcessSms>(); 
+	        	//m_TaskList = new ArrayList<TaskProcessSms>(); 
 	   
 	        	m_Tts = new TextToSpeech(this, this);
 	        	
@@ -120,10 +120,10 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	
                 m_IncognitoMode = m_Preferences.getBoolean("incognitoMode", false);      
                 m_VoiceNotifications = m_Preferences.getBoolean("voiceNotifications", false);
-                m_OnlyFavourites = m_Preferences.getBoolean("onlyFavs", true);
+                //m_OnlyFavourites = m_Preferences.getBoolean("onlyFavs", true);
                 m_NotifyWhenLocked = m_Preferences.getBoolean("notifyWhenLocked", true);
                 
-                m_RespondWhenLocationAvailable = m_Preferences.getBoolean("respWhenLocAvailable", false); 
+                //m_RespondWhenLocationAvailable = m_Preferences.getBoolean("respWhenLocAvailable", false); 
 //         	   	m_MinTime = m_Preferences.getLong("locnMinTime", DEFAULT_MIN_TIME); 
 //         	   	m_MinDistance = m_Preferences.getFloat("locMinDistance", DEFAULT_MIN_DISTANCE);
                 
@@ -261,18 +261,18 @@ public class WhereAppYouService extends Service implements LocationListener,
 			}
 		}
 
-		private void clearTasks() 
-		{
-			if (null != m_TaskList && !m_TaskList.isEmpty())
-			{
-				for (TaskProcessSms _Task : m_TaskList)
-				{
-					_Task.cancel(true);
-				}
-				m_TaskList.clear();
-				m_TaskList = null;
-			}
-		} 
+//		private void clearTasks() 
+//		{
+//			if (null != m_TaskList && !m_TaskList.isEmpty())
+//			{
+//				for (TaskProcessSms _Task : m_TaskList)
+//				{
+//					_Task.cancel(true);
+//				}
+//				m_TaskList.clear();
+//				m_TaskList = null;
+//			}
+//		} 
 	   
        @Override
        protected void finalize() throws Throwable 
@@ -289,7 +289,7 @@ public class WhereAppYouService extends Service implements LocationListener,
     	   //We save the last known location in case of service crash.
     	   saveLastKnowLocation();    	   
     	   
-    	   clearTasks();
+    	   //clearTasks();
 
 	       clearTTS();
     	   
@@ -394,198 +394,203 @@ public class WhereAppYouService extends Service implements LocationListener,
     		}
        }
     
-      private class TaskProcessSms extends AsyncTask<Request, Void, Boolean>
-      {
-    	  private StringBuilder message = null;
-    	  private String ToWhom = "";
-    	  private Request Contact = null;
-    	  private String PayLoad = "";
-
-		@Override
-		protected Boolean doInBackground(Request... params) 
-		{
-//			mainContext = (Context)params[0];
-//			String _ToWhom = ;
-//			PayLoad = (String)params[2];
-			
-			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
-			
-			Contact = params[0];//(Request)params[0];
-			ToWhom = Utils.GetName(Contact.getPhoneNumber());
-			
-			boolean result = false;
-			
-			if (null == m_Location)
-			{
-				synchronized (this) 
-				{
-					try 
-					{
-						Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Waiting");
-						
-						//If the Service must respond when location becomes available, then we wait here until notified.
-						//if not then we wait anyway but only 45 seconds (see explanation below) but if after waiting, still 
-						//no location becomes available, we inform the caller to try again later.
-						
-						//IMPORTANT : "Normally" It can take about 45 seconds to acquire satellite signals (if GPS Enabled) 
-						//when first start the application or roughly 15 seconds if it has been used recently. Because the 
-						//signal cannot pass through solid non-transparent objects, GPS requires an non-obstructed view 
-						//of the sky to work correctly. Thus, signal reception can be degraded by tall buildings, bridges,
-						//tunnels, mountains, etc. Also, moving around while locking onto several satellites makes it harder
-						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
-						if (m_RespondWhenLocationAvailable)
-							wait(); //Actually i don't know which problems (CPU/battery) this option may carry, we need to test on real devices.
-						else
-							wait(DEFAULT_WAIT_TIME);
-						
-					} catch (InterruptedException e) 
-					{
-						e.printStackTrace();
-					}
-				}
-			}
-			  
-			try 
-			{
-				message = new StringBuilder();
-					
-				if (null == m_Location)
-				{
-					message.append(String.format("%s %s", getString(R.string.greetings_txt), ToWhom));
-					message.append(String.format("\n %s", getString(R.string.NoLocationAvailable_txt)));
-				}
-				else
-				{
-					double lat = m_Location.getLatitude();
-					double lon = m_Location.getLongitude();
-					
-					StringBuilder uri = new StringBuilder("http://maps.google.com/maps");
-					uri.append("?q=");
-					uri.append(String.valueOf(lat));
-					uri.append(",");
-					uri.append(String.valueOf(lon));					
-					uri.append("(Here)&z=14&ll=");
-					uri.append(String.valueOf(lat));
-					uri.append(",");
-					uri.append(String.valueOf(lon));					
-				        
-					message.append(String.format("%s ", getString(R.string.here_txt)));
-
-					String addressgeocoded = Utils.getAddress(lat, lon);
-					
-					if ("" != addressgeocoded)
-					{
-						message.append(addressgeocoded);
-					}
-
-					if ( "" != PayLoad)
-					{
-						// TODO : Add here extra information requested
-						/*------------------------------------------------
-						 * Possible Extra Info : 
-						 * ETA
-						 * Distance to point  -> Implemented here not yet in protocol
-						 * Lost/Stolen phone send answer back and shutdown/lock SIM/phone?
-						 ---------------------------------------------- */
-						
-						//Distance To Point.
-						String dtp = PayLoad.toUpperCase(Locale.getDefault());
-						if (dtp.contains("DTP"))
-						{
-							int index = dtp.indexOf("DTP="); 
-							String[] dtpParams = dtp.substring(index).split(",");
-							message.append(Utils.getDistanceString(m_Location, dtpParams[0], dtpParams[1]));
-							message.append(" entfernt"); // TODO : Add this to the localization files
-						}
-					}
-					
-					message.append(" ");
-					message.append(uri.toString());
-//					message.append(URLEncoder.encode(uri.toString(), "UTF-8"));
-				}
-				
-				Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Message built");
-				
-				result = true;
-			}
-			catch (Exception e) 
-			{
-				e.printStackTrace();
-			}
-		
-			return result;
-		}
-		
-        @Override
-        protected void onPostExecute(Boolean result) 
-        {
-			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData posting message");
-        	
-        	if (result)
-        	{
-        		try
-        		{
-					SmsManager sms = SmsManager.getDefault();
-					
-					ArrayList<String> parts = sms.divideMessage(message.toString());
-					
-					if (parts.size() > 1)
-						sms.sendMultipartTextMessage(Contact.getPhoneNumber(), null, parts, null, null);	
-					else
-						sms.sendTextMessage(Contact.getPhoneNumber(), null, message.toString(), null, null);						
-					
-					//Update the current Contact sent.
-					Intent updateService = new Intent(WhereAppYouApplication.getAppContext(), RequestsUpdateService.class); 
-	        		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, Contact);
-	        		WhereAppYouApplication.getAppContext().startService(updateService);
-					
-					SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom));
-        		}
-        		catch (Exception e) 
-        		{
-        			e.printStackTrace();
-        			SetNotification(String.format("%s %s", getString(R.string.messageNotDeliveredTo_txt), ToWhom));
-				}
-        	}
-        	else
-        		SetNotification(getString(R.string.messageWithProblems_txt)); 
-        }
-      }
+//      private class TaskProcessSms extends AsyncTask<Request, Void, Boolean>
+//      {
+//    	  private StringBuilder message = null;
+//    	  private String ToWhom = "";
+//    	  private Request Contact = null;
+//    	  private String PayLoad = "";
+//
+//		@Override
+//		protected Boolean doInBackground(Request... params) 
+//		{
+////			mainContext = (Context)params[0];
+////			String _ToWhom = ;
+////			PayLoad = (String)params[2];
+//			
+//			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
+//			
+//			Contact = params[0];//(Request)params[0];
+//			ToWhom = Utils.GetName(Contact.getPhoneNumber());
+//			
+//			boolean result = false;
+//			
+//			if (null == m_Location)
+//			{
+//				synchronized (this) 
+//				{
+//					try 
+//					{
+//						Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Waiting");
+//						
+//						//If the Service must respond when location becomes available, then we wait here until notified.
+//						//if not then we wait anyway but only 45 seconds (see explanation below) but if after waiting, still 
+//						//no location becomes available, we inform the caller to try again later.
+//						
+//						//IMPORTANT : "Normally" It can take about 45 seconds to acquire satellite signals (if GPS Enabled) 
+//						//when first start the application or roughly 15 seconds if it has been used recently. Because the 
+//						//signal cannot pass through solid non-transparent objects, GPS requires an non-obstructed view 
+//						//of the sky to work correctly. Thus, signal reception can be degraded by tall buildings, bridges,
+//						//tunnels, mountains, etc. Also, moving around while locking onto several satellites makes it harder
+//						//for those separate signals to pinpoint the exact location, that's why we use the 45 seconds to wait. 
+//						if (m_RespondWhenLocationAvailable)
+//							wait(); //Actually i don't know which problems (CPU/battery) this option may carry, we need to test on real devices.
+//						else
+//							wait(DEFAULT_WAIT_TIME);
+//						
+//					} catch (InterruptedException e) 
+//					{
+//						e.printStackTrace();
+//					}
+//				}
+//			}
+//			  
+//			try 
+//			{
+//				message = new StringBuilder();
+//					
+//				if (null == m_Location)
+//				{
+//					message.append(String.format("%s %s", getString(R.string.greetings_txt), ToWhom));
+//					message.append(String.format("\n %s", getString(R.string.NoLocationAvailable_txt)));
+//				}
+//				else
+//				{
+//					double lat = m_Location.getLatitude();
+//					double lon = m_Location.getLongitude();
+//					
+//					StringBuilder uri = new StringBuilder("http://maps.google.com/maps");
+//					uri.append("?q=");
+//					uri.append(String.valueOf(lat));
+//					uri.append(",");
+//					uri.append(String.valueOf(lon));					
+//					uri.append("(Here)&z=14&ll=");
+//					uri.append(String.valueOf(lat));
+//					uri.append(",");
+//					uri.append(String.valueOf(lon));					
+//				        
+//					message.append(String.format("%s ", getString(R.string.here_txt)));
+//
+//					String addressgeocoded = Utils.getAddress(lat, lon);
+//					
+//					if ("" != addressgeocoded)
+//					{
+//						message.append(addressgeocoded);
+//					}
+//
+//					if ( "" != PayLoad)
+//					{
+//						// TODO : Add here extra information requested
+//						/*------------------------------------------------
+//						 * Possible Extra Info : 
+//						 * ETA
+//						 * Distance to point  -> Implemented here not yet in protocol
+//						 * Lost/Stolen phone send answer back and shutdown/lock SIM/phone?
+//						 ---------------------------------------------- */
+//						
+//						//Distance To Point.
+//						String dtp = PayLoad.toUpperCase(Locale.getDefault());
+//						if (dtp.contains("DTP"))
+//						{
+//							int index = dtp.indexOf("DTP="); 
+//							String[] dtpParams = dtp.substring(index).split(",");
+//							message.append(Utils.getDistanceString(m_Location, dtpParams[0], dtpParams[1]));
+//							message.append(" entfernt"); // TODO : Add this to the localization files
+//						}
+//					}
+//					
+//					message.append(" ");
+//					message.append(uri.toString());
+////					message.append(URLEncoder.encode(uri.toString(), "UTF-8"));
+//				}
+//				
+//				Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Message built");
+//				
+//				result = true;
+//			}
+//			catch (Exception e) 
+//			{
+//				e.printStackTrace();
+//			}
+//		
+//			return result;
+//		}
+//		
+//        @Override
+//        protected void onPostExecute(Boolean result) 
+//        {
+//			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData posting message");
+//        	
+//        	if (result)
+//        	{
+//        		try
+//        		{
+//					SmsManager sms = SmsManager.getDefault();
+//					
+//					ArrayList<String> parts = sms.divideMessage(message.toString());
+//					
+//					if (parts.size() > 1)
+//						sms.sendMultipartTextMessage(Contact.getPhoneNumber(), null, parts, null, null);	
+//					else
+//						sms.sendTextMessage(Contact.getPhoneNumber(), null, message.toString(), null, null);						
+//					
+//					//Update the current Contact sent.
+//					Intent updateService = new Intent(WhereAppYouApplication.getAppContext(), RequestsUpdateService.class); 
+//	        		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, Contact);
+//	        		WhereAppYouApplication.getAppContext().startService(updateService);
+//					
+//					SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom));
+//        		}
+//        		catch (Exception e) 
+//        		{
+//        			e.printStackTrace();
+//        			SetNotification(String.format("%s %s", getString(R.string.messageNotDeliveredTo_txt), ToWhom));
+//				}
+//        	}
+//        	else
+//        		SetNotification(getString(R.string.messageWithProblems_txt)); 
+//        }
+//      }
       
       
       //Starts a new task
 	   private void processData()
 	   {
-		   List<Request> requests = Utils.getNotProcessedRequests(); 
 		   
-		   if (!requests.isEmpty())
-		   {
-			   for (Request _Contact : requests)
-			   {
-				
-				   Log.v("WhereAppYouService", String.format("ProcessData, Request %s", _Contact.getRowId()));
-				   
-				   boolean _answer = true;
-				   
-				   // TODO : Check here to answer the SMS depending on the following options : 
-				   // allow all, allow only favorites, allow custom list
-			       // UPDATE : partially implemented using favorites/starred.
-			       if (m_OnlyFavourites)
-			       {
-			    	   _answer = _Contact.isFavContact();//Utils.isFavContact(getContentResolver(),_Contact.getPhoneNumber());
-			       }
-	
-			       if (_answer)
-			       {
-			 		   TaskProcessSms _Task = new TaskProcessSms();
-					   _Task.execute(_Contact);
-					   //m_TaskList.add(_Task);
-			       }
-			   }
-		   }
-		   else
-				Log.v("WhereAppYouService", " ProcessData, nothing to do!");
-			   
+	   		Intent processService = new Intent(WhereAppYouApplication.getAppContext(), ProcessRequestsService.class);
+	   		processService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, m_Location);
+	   		WhereAppYouApplication.getAppContext().startService(processService);
+		   
+//		   List<Request> requests = Utils.getNotProcessedRequests(); 
+//		   
+//		   if (!requests.isEmpty())
+//		   {
+//			   for (Request _Contact : requests)
+//			   {
+//				
+//				   Log.v("WhereAppYouService", String.format("ProcessData, Request %s", _Contact.getRowId()));
+//				   
+//				   boolean _answer = true;
+//				   
+//				   // TODO : Check here to answer the SMS depending on the following options : 
+//				   // allow all, allow only favorites, allow custom list
+//			       // UPDATE : partially implemented using favorites/starred.
+//			       if (m_OnlyFavourites)
+//			       {
+//			    	   _answer = _Contact.isFavContact();//Utils.isFavContact(getContentResolver(),_Contact.getPhoneNumber());
+//			       }
+//	
+//			       if (_answer)
+//			       {
+//			 		   TaskProcessSms _Task = new TaskProcessSms();
+//					   _Task.execute(_Contact);
+//					   //m_TaskList.add(_Task);
+//			       }
+//			   }
+//		   }
+//		   else
+//				Log.v("WhereAppYouService", " ProcessData, nothing to do!");
+//			   
 	   }
 
        // Register the listeners within the Location Manager to receive location updates.
@@ -693,14 +698,14 @@ public class WhereAppYouService extends Service implements LocationListener,
 				m_IncognitoMode = prefs.getBoolean(key, false);
 			else if  (key.contains("voiceNotifications"))
 				m_VoiceNotifications = prefs.getBoolean(key, false);
-			else if  (key.contains("onlyFavs"))
-				m_OnlyFavourites = prefs.getBoolean(key, true);
+//			else if  (key.contains("onlyFavs"))
+//				m_OnlyFavourites = prefs.getBoolean(key, true);
 //			else if  (key.contains("locMinTime"))
 //				m_MinTime = prefs.getLong(key, DEFAULT_MIN_TIME);
 //			else if  (key.contains("locMinDistance"))
 //				m_MinDistance = prefs.getFloat(key, DEFAULT_MIN_DISTANCE);
-			else if  (key.contains("respWhenLocAvailable"))
-				m_RespondWhenLocationAvailable = prefs.getBoolean(key, false);
+//			else if  (key.contains("respWhenLocAvailable"))
+//				m_RespondWhenLocationAvailable = prefs.getBoolean(key, false);
 			else if  (key.contains("notifyWhenLocked"))
 				m_NotifyWhenLocked = prefs.getBoolean(key, true);
 			
