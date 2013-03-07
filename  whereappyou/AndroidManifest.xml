@@ -37,6 +37,7 @@
         
 		<service android:name="com.freshtechnology.whereappyou.WhereAppYouService"></service>
 		<service android:name="com.freshtechnology.whereappyou.RequestsUpdateService"></service>
+		<service android:name="com.freshtechnology.whereappyou.ProcessRequestsService"></service>
         
 	    <receiver android:name=".SMSReceiver">
     		<intent-filter android:priority="999">
