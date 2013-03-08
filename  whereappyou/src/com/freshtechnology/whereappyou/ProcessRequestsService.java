@@ -34,6 +34,7 @@ public class ProcessRequestsService extends IntentService
 	{
 	    super.onCreate();
 	}
+	
 
 	@Override
 	protected void onHandleIntent(Intent intent) 
