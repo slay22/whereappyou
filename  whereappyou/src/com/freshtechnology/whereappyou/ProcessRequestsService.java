@@ -155,6 +155,36 @@ public class ProcessRequestsService extends IntentService
 //				message.append(URLEncoder.encode(uri.toString(), "UTF-8"));
 			}
 			
+			//Test to send an MMS with the snapshot of the mapo location
+//			URL url = new URL ("http://maps.google.com/maps/api/staticmap?center=" + lat + "," + longi+ "&zoom=15&size=200x200&sensor=false")
+//
+//		    InputStream input = url.openStream();
+//		    try {
+//		        OutputStream output = new FileOutputStream ("/sdcard/image.png");
+//		        try {
+//		            byte[] buffer = new byte[aReasonableSize];
+//		            int bytesRead = 0;
+//		            while ((bytesRead = input.read(buffer, 0, buffer.length)) >= 0) {
+//		                output.write(buffer, 0, bytesRead);
+//		            }
+//		        } finally {
+//		            output.close();
+//		        }
+//		    } finally {
+//		        input.close();
+//		    }
+//
+//		Intent intent = new Intent(Intent.ACTION_SEND);
+//		intent.putExtra("sms_body", "Hi how are you");
+//		intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File("/sdcard/image.png")));
+//		intent.setType("image/gif"); 
+			
+			
+			
+			
+			
+			
+			
 			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Message built");
 		
 			SmsManager sms = SmsManager.getDefault();
