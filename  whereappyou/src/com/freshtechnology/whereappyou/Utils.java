@@ -8,23 +8,96 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.provider.Settings;
 import android.provider.ContactsContract.PhoneLookup;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
+import android.text.format.Time;
 import android.util.Log;
 
 public class Utils 
 {
 	/** 
-     * Finds the caller's name, looking on the phone contact list
+     * Creates a Notification with several Parameters.
      * 
-     * @param phonenumber to look for
-     * @return String name if found, the phone number in case not.
+     * @return Notification.
+     */
+	public static Notification SetNotification(String message, 
+												boolean notifyWhenLocked,
+												boolean voiceNotifications, 
+												TextToSpeechController tts )
+    {
+        // set up the notification and start foreground if not Incognito mode
+		NotificationManager _NotificationManager = (NotificationManager) WhereAppYouApplication.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
+ 
+		_NotificationManager.cancelAll();
+		        	    
+        Context context = WhereAppYouApplication.getAppContext();
+        
+        Resources res = context.getResources();
+        
+		Intent notificationIntent = new Intent(context, MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
+        
+        CharSequence contentTitle = res.getString(R.string.app_name);
+        CharSequence contentText = message;
+
+        Builder builder = new NotificationCompat.Builder(context);
+
+        builder.setContentIntent(contentIntent)
+	            .setSmallIcon(R.drawable.ic_launcher)
+	            //.setLargeIcon(BitmapFactory.decodeResource(res, R.drawable.some_big_img))
+        		//.setTicker(res.getString(R.string.ticker))
+	            .setWhen(System.currentTimeMillis())
+	            .setAutoCancel(true)
+	            .setContentTitle(contentTitle)
+	            .setContentText(contentText);
+	
+        Notification not = builder.build();
+
+        _NotificationManager.notify(1, not);       
+   
+        if (voiceNotifications && null != tts)
+        {
+        	tts.speak(message);
+        }
+
+        //TODO : I don't like how this is done, we must re-check this feature before release.
+	   	if (notifyWhenLocked)
+	   	{
+	   		try
+	   		{
+	   			Time today = new Time(Time.getCurrentTimezone());
+	   			today.setToNow();    			   
+	   			Settings.System.putString(context.getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, String.format("%s %s", message, today.format("%k:%M:%S")));
+	   		}
+	   		catch (Exception e)
+	   		{
+	   			e.printStackTrace();
+	   		}
+	   	}
+	   	
+	   	return not;
+    }
+	
+	
+	/** 
+     * Loads all Requests not Processed.
+     * 
+     * @return List<Request>.
      */
 	public static List<Request> getNotProcessedRequests()
 	{
@@ -37,11 +110,13 @@ public class Utils
 		String[] values = new String[] { String.valueOf(0) }; 
 		List<Request> requests = new ArrayList<Request>();
 		
+		Cursor cursor = null;
+		
 		try
 		{
 			   ContentResolver contentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
 			   
-			   Cursor cursor = contentResolver.query(RequestsContentProvider.CONTENT_URI, columns, WhereAppYouDatabaseHelper.KEY_PROCESSED + " = ?", values, null);
+			   cursor = contentResolver.query(RequestsContentProvider.CONTENT_URI, columns, WhereAppYouDatabaseHelper.KEY_PROCESSED + " = ?", values, null);
 			   
 				if (cursor.moveToFirst()) 
 				{
@@ -67,11 +142,15 @@ public class Utils
 						
 					} while (cursor.moveToNext());
 				}
-				cursor.close();
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
+		}
+		finally
+		{
+		  if (null != cursor)
+			  cursor.close();
 		}
 		
 		return requests; 
@@ -88,16 +167,18 @@ public class Utils
 	{
 		String result = number;
 		
+		Cursor cursor = null;
+		
 		try
 		{
 		   ContentResolver contentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
 
 		   Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-		   Cursor c = contentResolver.query(uri, new String[] { PhoneLookup.DISPLAY_NAME }, null, null, null);
+		   cursor = contentResolver.query(uri, new String[] { PhoneLookup.DISPLAY_NAME }, null, null, null);
 		
-		   if (c.moveToFirst()) 
+		   if (cursor.moveToFirst()) 
 		   {
-			   String name = c.getString(c.getColumnIndex(PhoneLookup.DISPLAY_NAME));
+			   String name = cursor.getString(cursor.getColumnIndex(PhoneLookup.DISPLAY_NAME));
 			   result = name;
 		   }       
         }
@@ -105,6 +186,11 @@ public class Utils
 	    {
 			e.printStackTrace();
 	    }
+		finally
+		{
+		  if (null != cursor)
+			  cursor.close();
+		}
 		
         return result;
 	}
@@ -118,23 +204,29 @@ public class Utils
 	public static boolean isFavContact(String number) 
 	{
 		boolean isStarred = false;
+		Cursor cursor = null;
 		
 		try
 		{
 			ContentResolver contentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
 	
 			Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-			Cursor c = contentResolver.query(uri, new String[] { PhoneLookup.STARRED }, null, null, null);
+			cursor = contentResolver.query(uri, new String[] { PhoneLookup.STARRED }, null, null, null);
 	
-	        if (c.moveToFirst()) 
+	        if (cursor.moveToFirst()) 
 	        {
-	        	isStarred = (c.getInt(c.getColumnIndex(PhoneLookup.STARRED)) == 1); 
+	        	isStarred = (cursor.getInt(cursor.getColumnIndex(PhoneLookup.STARRED)) == 1); 
 	        }       
         }
 		catch(Exception e) 
 	    {
 			e.printStackTrace();
 	    }
+		finally
+		{
+			if (null != cursor)
+				cursor.close();
+		}
 		
         return isStarred;
 	}

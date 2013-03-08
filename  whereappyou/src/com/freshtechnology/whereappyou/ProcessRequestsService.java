@@ -6,9 +6,11 @@ import java.util.Locale;
 
 
 import android.app.IntentService;
+import android.app.Notification;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.telephony.SmsManager;
 import android.util.Log;
@@ -17,6 +19,10 @@ public class ProcessRequestsService extends IntentService
 {
 	protected static String TAG = "ProcessRequestsService";
 	private Location m_Location;
+	
+	private boolean m_IncognitoMode = false;
+	private boolean m_VoiceNotifications = false;
+	private boolean m_NotifyWhenLocked = false;
 	
 	public ProcessRequestsService() 
 	{
@@ -34,11 +40,18 @@ public class ProcessRequestsService extends IntentService
 	{
 		if (intent == null) return;
 		
-		
 		SharedPreferences _Preferences = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
 		boolean _OnlyFavourites = _Preferences.getBoolean("onlyFavs", true);
 		
-		// TODO : get location from parameters here 
+        m_IncognitoMode = _Preferences.getBoolean("incognitoMode", false);      
+        m_VoiceNotifications = _Preferences.getBoolean("voiceNotifications", false);
+        m_NotifyWhenLocked = _Preferences.getBoolean("notifyWhenLocked", true);
+		
+		Bundle extras = intent.getExtras();
+		if (intent.hasExtra(WhereAppYouApplication.EXTRA_KEY_LOCATION)) 
+		{
+			m_Location = (Location)(extras.get(WhereAppYouApplication.EXTRA_KEY_LOCATION));
+		}
 		
 		List<Request> requests = Utils.getNotProcessedRequests(); 
 		   
@@ -78,6 +91,9 @@ public class ProcessRequestsService extends IntentService
 		Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Runnable running");
 		
 		ToWhom = Utils.GetName(Contact.getPhoneNumber());
+		
+		Notification notification = null;
+		TextToSpeechController _TextToSpeechController = TextToSpeechController.getInstance(WhereAppYouApplication.getAppContext());
 
 		try 
 		{
@@ -151,19 +167,26 @@ public class ProcessRequestsService extends IntentService
 			
 			//Update the current Contact sent.
 			Intent updateService = new Intent(WhereAppYouApplication.getAppContext(), RequestsUpdateService.class); 
-    		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, Contact);
+    		updateService.putExtra(WhereAppYouApplication.EXTRA_KEY_UPDATE, Contact);
     		WhereAppYouApplication.getAppContext().startService(updateService);
 			Log.v("WhereAppYouService", System.currentTimeMillis() + ": ProcessData Update Service called");
     		
-    		// TODO : Move Notification to Application 
-    		
-			//SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom));
+			notification = Utils.SetNotification(String.format("%s %s", getString(R.string.messageDeliveredTo_txt), ToWhom), m_NotifyWhenLocked, m_VoiceNotifications, _TextToSpeechController);
 		}
 		catch (Exception e) 
 		{
 			e.printStackTrace();
 			
-			//SetNotification(String.format("%s %s", getString(R.string.messageNotDeliveredTo_txt), ToWhom));
+			notification = Utils.SetNotification(String.format("%s %s", getString(R.string.messageNotDeliveredTo_txt), ToWhom), m_NotifyWhenLocked, m_VoiceNotifications, _TextToSpeechController);
 		}
+		
+ 		if (m_IncognitoMode)
+ 		{
+ 			stopForeground(true);    			
+ 		}
+ 		else
+ 		{
+ 			startForeground(1, notification);
+ 		}
 	}
 }
