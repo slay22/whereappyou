@@ -17,47 +17,46 @@
 package com.freshtechnology.whereappyou;
 
 //import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+//import java.util.ArrayList;
+//import java.util.List;
+//import java.util.Locale;
 
-import android.speech.tts.TextToSpeech;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationCompat.Builder;
+//import android.speech.tts.TextToSpeech;
+//import android.support.v4.app.NotificationCompat;
+//import android.support.v4.app.NotificationCompat.Builder;
 
 import android.app.Notification;
 //import android.app.Notification.Builder;
 import android.app.AlarmManager;
-import android.app.NotificationManager;
+//import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 //import android.content.BroadcastReceiver;
 //import android.content.ContentResolver;
-import android.content.Context;
+//import android.content.Context;
 import android.content.Intent;
 //import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
+//import android.content.res.Resources;
 //import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
+//import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
+//import android.os.AsyncTask;
 //import android.os.AsyncTask.Status;
 //import android.os.AsyncTask.Status;
 import android.os.Bundle;
 //import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.telephony.SmsManager;
-import android.text.format.Time;
+//import android.provider.Settings;
+//import android.telephony.SmsManager;
+//import android.text.format.Time;
 import android.util.Log; 
 //import android.widget.Toast;
 
-public class WhereAppYouService extends Service implements LocationListener, 
-						SharedPreferences.OnSharedPreferenceChangeListener,
-						TextToSpeech.OnInitListener
+public class WhereAppYouService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener 
+						/*LocationListener, TextToSpeech.OnInitListener*/ 
 {
 	   private LocationManager m_LocManager;
 	   private static Location m_Location;
@@ -85,12 +84,13 @@ public class WhereAppYouService extends Service implements LocationListener,
 //	   private float m_MinDistance = 10;
 	   
 	   private SharedPreferences m_Preferences = null;
-	   private NotificationManager m_NotificationManager = null;
+	   //private NotificationManager m_NotificationManager = null;
 //	   private BroadcastReceiver m_PowerStateChangedReceiver = null;
 //	   private Builder m_builder = null;
 	   
-	   private TextToSpeech m_Tts = null;
-	   private boolean m_ttsInitialied = false;
+	   private TextToSpeechController m_TextToSpeechController = null;
+	   //private TextToSpeech m_Tts = null;
+	   //private boolean m_ttsInitialied = false;
 	   //private List<TaskProcessSms> m_TaskList;
    
 	   public IBinder onBind(Intent intent) 
@@ -113,7 +113,9 @@ public class WhereAppYouService extends Service implements LocationListener,
 	        	
 	        	//m_TaskList = new ArrayList<TaskProcessSms>(); 
 	   
-	        	m_Tts = new TextToSpeech(this, this);
+	        	//m_Tts = new TextToSpeech(this, this);
+	        	
+	        	m_TextToSpeechController = TextToSpeechController.getInstance(WhereAppYouApplication.getAppContext());
 	        	
 	        	m_Preferences = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
 	        	m_Preferences.registerOnSharedPreferenceChangeListener(this);
@@ -146,7 +148,15 @@ public class WhereAppYouService extends Service implements LocationListener,
 
     		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": WhereAppYouService listeners registered.");
 
-	        SetNotification(getString(R.string.serviceIsRunning_txt));	        
+     		if (m_IncognitoMode)
+     		{
+     			stopForeground(true);    			
+     		}
+     		else
+     		{
+     			Notification notification = Utils.SetNotification(getString(R.string.serviceIsRunning_txt), m_NotifyWhenLocked, m_VoiceNotifications, m_TextToSpeechController);
+     			startForeground(1, notification);
+     		}
 	   }
 	   
 	   @Override
@@ -252,14 +262,14 @@ public class WhereAppYouService extends Service implements LocationListener,
 	       m_Preferences = null;
 	   }
 
-	   private void clearTTS() 
-	   {
-			if (m_Tts != null) 
-			{
-				m_Tts.stop();
-				m_Tts.shutdown();
-			}
-		}
+//	   private void clearTTS() 
+//	   {
+//			if (m_Tts != null) 
+//			{
+//				m_Tts.stop();
+//				m_Tts.shutdown();
+//			}
+//		}
 
 //		private void clearTasks() 
 //		{
@@ -291,7 +301,7 @@ public class WhereAppYouService extends Service implements LocationListener,
     	   
     	   //clearTasks();
 
-	       clearTTS();
+	       //clearTTS();
     	   
 	       //unregisterReceiver(m_PowerStateChangedReceiver);
 	       
@@ -332,67 +342,6 @@ public class WhereAppYouService extends Service implements LocationListener,
 //    	   return criteria;
 //       }
 	   
-       private void SetNotification(String message)
-       {
-           // set up the notification and start foreground if not Incognito mode
-    	    if (null == m_NotificationManager)
-    	    	m_NotificationManager = (NotificationManager) WhereAppYouApplication.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
-    
-			m_NotificationManager.cancelAll();
-		        	    
-    		if (m_IncognitoMode)
-    		{
-    			stopForeground(true);    			
-    		}
-    		else
-    		{
-		       Intent notificationIntent = new Intent(this, MainActivity.class);
-	           PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-	           Resources res = getResources();
-	           
-	           Context context = WhereAppYouApplication.getAppContext();
-	           CharSequence contentTitle = res.getString(R.string.app_name);
-	           CharSequence contentText = message;
-
-	           Builder builder = new NotificationCompat.Builder(context);
-
-	           builder.setContentIntent(contentIntent)
-	        	            .setSmallIcon(R.drawable.ic_launcher)
-	        	            //.setLargeIcon(BitmapFactory.decodeResource(res, R.drawable.some_big_img))
-	        	            //.setTicker(res.getString(R.string.ticker))
-	        	            .setWhen(System.currentTimeMillis())
-	        	            .setAutoCancel(true)
-	        	            .setContentTitle(contentTitle)
-	        	            .setContentText(contentText);
-	        	
-	           Notification not = builder.build();
-
-	           m_NotificationManager.notify(1, not);       
-	           
-	           startForeground(1, not);
-	           
-    		   if (m_VoiceNotifications && m_ttsInitialied)
-    		   {
-    			   m_Tts.speak(message, TextToSpeech.QUEUE_FLUSH, null);
-    		   }
-
-			   //TODO : I don't like how this is done, we must re-check this feature before release.
-    		   if (m_NotifyWhenLocked)
-    		   {
-	    		   try
-	    		   {
-	    			   Time today = new Time(Time.getCurrentTimezone());
-	    			   today.setToNow();    			   
-	    			   Settings.System.putString(context.getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED, String.format("%s %s", message, today.format("%k:%M:%S")));
-	    		   }
-	    		   catch (Exception e)
-	    		   {
-	    			   e.printStackTrace();
-	    		   }
-    		   }
-    		}
-       }
     
 //      private class TaskProcessSms extends AsyncTask<Request, Void, Boolean>
 //      {
@@ -558,7 +507,7 @@ public class WhereAppYouService extends Service implements LocationListener,
 	   {
 		   
 	   		Intent processService = new Intent(WhereAppYouApplication.getAppContext(), ProcessRequestsService.class);
-	   		processService.putExtra(WhereAppYouApplication.EXTRA_KEY_INSERT, m_Location);
+	   		processService.putExtra(WhereAppYouApplication.EXTRA_KEY_LOCATION, m_Location);
 	   		WhereAppYouApplication.getAppContext().startService(processService);
 		   
 //		   List<Request> requests = Utils.getNotProcessedRequests(); 
@@ -649,8 +598,8 @@ public class WhereAppYouService extends Service implements LocationListener,
 		   }
 	   }
 	   
-	   private void signalTasks() 
-	   {
+//	   private void signalTasks() 
+//	   {
 //		   if (null != m_Location)
 //		   {
 //			   if (!m_TaskList.isEmpty())
@@ -664,32 +613,32 @@ public class WhereAppYouService extends Service implements LocationListener,
 //				   }
 //			   }
 //		   }
-	   }
+//	   }
 	   
-	   @Override
-	   public void onLocationChanged(Location location) 
-	   {
-		   m_Location = Utils.AdjustLocation(m_LocManager, location); 
-		   signalTasks();
-	   }
-		
-	   @Override
-	   public void onProviderDisabled(String provider) 
-	   {
-           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " disabled");              
-	   }
-		
-	   @Override
-	   public void onProviderEnabled(String provider) 
-	   {
-           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " enabled");              
-	   }
-		
-	   @Override
-	   public void onStatusChanged(String provider, int status, Bundle extras) 
-	   {
-           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " status changed to " + String.valueOf(status));              
-	   }
+//	   @Override
+//	   public void onLocationChanged(Location location) 
+//	   {
+//		   m_Location = Utils.AdjustLocation(m_LocManager, location); 
+//		   signalTasks();
+//	   }
+//		
+//	   @Override
+//	   public void onProviderDisabled(String provider) 
+//	   {
+//           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " disabled");              
+//	   }
+//		
+//	   @Override
+//	   public void onProviderEnabled(String provider) 
+//	   {
+//           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " enabled");              
+//	   }
+//		
+//	   @Override
+//	   public void onStatusChanged(String provider, int status, Bundle extras) 
+//	   {
+//           Log.v("WhereAppYouService", System.currentTimeMillis() + provider + " status changed to " + String.valueOf(status));              
+//	   }
 	    
 		@Override
 		public void onSharedPreferenceChanged(SharedPreferences prefs, String key) 
@@ -719,25 +668,25 @@ public class WhereAppYouService extends Service implements LocationListener,
 //			}
 		}
 
-		@Override
-		public void onInit(int status) 
-		{
-			if (status == TextToSpeech.SUCCESS) 
-			{
-				int result = m_Tts.setLanguage(Locale.getDefault());
- 
-				if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) 
-				{
-					Log.e("WhereAppYouService", "TTS : This Language is not supported");
-				} 
-				else 
-				{
-					m_ttsInitialied = true;
-				}
- 			} 
-			else 
-			{
-				Log.e("WhereAppYouService", "TTS : Initilization Failed!");
-			}			
-		}
+//		@Override
+//		public void onInit(int status) 
+//		{
+//			if (status == TextToSpeech.SUCCESS) 
+//			{
+//				int result = m_Tts.setLanguage(Locale.getDefault());
+// 
+//				if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) 
+//				{
+//					Log.e("WhereAppYouService", "TTS : This Language is not supported");
+//				} 
+////				else 
+////				{
+////					m_ttsInitialied = true;
+////				}
+// 			} 
+//			else 
+//			{
+//				Log.e("WhereAppYouService", "TTS : Initilization Failed!");
+//			}			
+//		}
 }

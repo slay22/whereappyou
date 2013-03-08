@@ -32,6 +32,7 @@ public class WhereAppYouApplication extends Application
     public static final String EXTRA_KEY_INSERT = "EXTRA_KEY_INSERT";
     public static final String EXTRA_KEY_DELETE = "EXTRA_KEY_DELETE";
     public static final String EXTRA_KEY_GET = "EXTRA_KEY_GET";
+    public static final String EXTRA_KEY_LOCATION = "EXTRA_KEY_LOCATION";
     
     public static Context getAppContext() 
     {
@@ -47,17 +48,19 @@ public class WhereAppYouApplication extends Application
     	if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.GINGERBREAD)
     	{
     		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
-    	    	.detectAll()
+    			.detectCustomSlowCalls()
     	    	.permitDiskReads()
     	    	.permitDiskWrites()
     	    	.penaltyLog()
-    	    	.penaltyDeath()
+    	    	.penaltyFlashScreen()
+    	    	//.penaltyDeath()
     	    	.build());
     		
     		StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
-    			.detectAll()
+    			.detectLeakedSqlLiteObjects()
+    			.detectLeakedClosableObjects()
     			.penaltyLog()
-    			.penaltyDeath()
+    			//.penaltyDeath()
     			.build());     		
     	}
     	
