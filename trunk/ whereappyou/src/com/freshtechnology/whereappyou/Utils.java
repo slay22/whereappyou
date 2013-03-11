@@ -156,6 +156,106 @@ public class Utils
 		return requests; 
 	}
 	
+	public static List<Request> getProcessedRequests()
+	{
+		String[] columns = new String[] { WhereAppYouDatabaseHelper.KEY_ROWID, 
+										  WhereAppYouDatabaseHelper.KEY_DATE, 
+										  WhereAppYouDatabaseHelper.KEY_NUMBER, 
+										  WhereAppYouDatabaseHelper.KEY_PROCESSED 
+										 };
+		
+		String[] values = new String[] { String.valueOf(1) }; 
+		List<Request> requests = new ArrayList<Request>();
+		
+		try
+		{
+			   ContentResolver contentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
+			   
+			   Cursor cursor = contentResolver.query(RequestsContentProvider.CONTENT_URI, columns, WhereAppYouDatabaseHelper.KEY_PROCESSED + " = ?", values, null);
+			   
+				if (cursor.moveToFirst()) 
+				{
+					do 
+					{
+						int _ID = 0;
+						Date _DateReceived = null;
+						String _Contact = "";
+						boolean _Processed = false;
+						try
+						{
+							_ID = cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_ROWID));
+							_DateReceived = DateFormat.getDateTimeInstance().parse(cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_DATE)));
+							_Contact = cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
+							_Processed = (cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_PROCESSED)) == 1);
+						}
+						catch (Exception e)
+						{
+							e.printStackTrace();
+						}
+						
+						requests.add(new Request(_ID, _DateReceived, _Contact, _Processed));
+						
+					} while (cursor.moveToNext());
+				}
+				cursor.close();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return requests; 
+	}
+	
+	public static List<Request> getAllRequests()
+	{
+		String[] columns = new String[] { WhereAppYouDatabaseHelper.KEY_ROWID, 
+										  WhereAppYouDatabaseHelper.KEY_DATE, 
+										  WhereAppYouDatabaseHelper.KEY_NUMBER, 
+										  WhereAppYouDatabaseHelper.KEY_PROCESSED 
+										 };
+		
+		List<Request> requests = new ArrayList<Request>();
+		
+		try
+		{
+			   ContentResolver contentResolver = WhereAppYouApplication.getAppContext().getContentResolver();
+			   
+			   Cursor cursor = contentResolver.query(RequestsContentProvider.CONTENT_URI, columns, null, null, null);
+			   
+				if (cursor.moveToFirst()) 
+				{
+					do 
+					{
+						int _ID = 0;
+						Date _DateReceived = null;
+						String _Contact = "";
+						boolean _Processed = false;
+						try
+						{
+							_ID = cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_ROWID));
+							_DateReceived = DateFormat.getDateTimeInstance().parse(cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_DATE)));
+							_Contact = cursor.getString(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_NUMBER));
+							_Processed = (cursor.getInt(cursor.getColumnIndex(WhereAppYouDatabaseHelper.KEY_PROCESSED)) == 1);
+						}
+						catch (Exception e)
+						{
+							e.printStackTrace();
+						}
+						
+						requests.add(new Request(_ID, _DateReceived, _Contact, _Processed));
+						
+					} while (cursor.moveToNext());
+				}
+				cursor.close();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return requests; 
+	}
 	
 	/** 
      * Finds the caller's name, looking on the phone contact list
