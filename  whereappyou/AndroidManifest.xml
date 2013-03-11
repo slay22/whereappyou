@@ -35,6 +35,17 @@
 			android:theme="@android:style/Theme.Black.NoTitleBar" >
 		</activity>        
         
+	    <!--  ALEX: Nötig für die Tabs Funktionen -->
+		<!--  Contacts Activity -->
+        <activity android:name=".LayoutKontakteActivity" />
+ 
+        <!--  Sended Activity -->
+        <activity android:name=".LayoutSendedActivity" />
+ 
+        <!--  Received Activity -->
+        <activity android:name=".LayoutReceivedActivity" />
+		
+		
 		<service android:name="com.freshtechnology.whereappyou.WhereAppYouService"></service>
 		<service android:name="com.freshtechnology.whereappyou.RequestsUpdateService"></service>
 		<service android:name="com.freshtechnology.whereappyou.ProcessRequestsService"></service>
@@ -63,7 +74,7 @@
     		    <action android:name="android.intent.action.BOOT_COMPLETED" />
     		</intent-filter>
 		</receiver-->	    
-		
+
 		<provider android:authorities="com.freshtechnology.provider.requests" android:name=".RequestsContentProvider"/>
 		
     </application>
