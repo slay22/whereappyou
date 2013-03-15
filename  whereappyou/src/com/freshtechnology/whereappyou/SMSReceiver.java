@@ -50,6 +50,8 @@ public class SMSReceiver extends BroadcastReceiver
 		                {
 		                    abortBroadcast();
 
+		                    WakeLocker.acquire(context);
+		                    
 			        		Log.v("WhereAppYouReceiver", System.currentTimeMillis() + ": SMSReceiver got a Message.");
 
 			        		String phoneNumber = msgs[i].getOriginatingAddress(); 
@@ -71,7 +73,9 @@ public class SMSReceiver extends BroadcastReceiver
 		                    Intent service = new Intent(context, WhereAppYouService.class);
 		                    service.putExtra("PhoneNumber", _request.getPhoneNumber());
 		                    service.putExtra("PayLoad", _request.getPayLoad());
-		                    context.startService(service);		                    
+		                    context.startService(service);
+		                    
+		                    WakeLocker.release();
 		                }            
 		            }
 	        	}
