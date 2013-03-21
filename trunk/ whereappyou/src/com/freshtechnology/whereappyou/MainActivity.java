@@ -26,7 +26,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 //import android.app.Activity;
-import android.app.ListActivity;
+//import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -37,18 +37,18 @@ import android.widget.ArrayAdapter;
 //import android.widget.Button;
 //import android.widget.ListAdapter;
 //import android.widget.ListView;
-import android.widget.SimpleAdapter;
+//import android.widget.SimpleAdapter;
 //import android.widget.SimpleCursorAdapter;
 //import android.widget.TextView;
 //import android.widget.Toast;
 
 
 // ALEX: Fürs Layout hinzugefügt
-import android.content.Intent;
-import android.os.Bundle;
+//import android.content.Intent;
+//import android.os.Bundle;
 import android.widget.TabHost;
 import android.widget.TabHost.TabContentFactory;
-import android.widget.TabHost.TabSpec;
+//import android.widget.TabHost.TabSpec;
 
 
 public class MainActivity extends FragmentActivity implements TabHost.OnTabChangeListener
@@ -57,7 +57,7 @@ public class MainActivity extends FragmentActivity implements TabHost.OnTabChang
 	private TabInfo m_LastTab = null;
 	private HashMap m_MapTabInfo = new HashMap();
 	
-	private ArrayAdapter<String> m_ListAdapter = null;
+	//private ArrayAdapter<String> m_ListAdapter = null;
 	
 	private class TabInfo 
 	{
@@ -65,6 +65,7 @@ public class MainActivity extends FragmentActivity implements TabHost.OnTabChang
 		private Class clss;
 		private Bundle args;
 		private Fragment fragment;
+		
 		TabInfo(String tag, Class clazz, Bundle args) 
 		{
 			tag = tag;
