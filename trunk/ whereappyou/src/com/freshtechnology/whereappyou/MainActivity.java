@@ -17,262 +17,118 @@
 package com.freshtechnology.whereappyou;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentTransaction;
+import android.provider.ContactsContract;
 //import android.app.Activity;
+
 //import android.app.ListActivity;
+import android.app.TabActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.database.Cursor;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
-//import android.widget.Button;
-//import android.widget.ListAdapter;
-//import android.widget.ListView;
 //import android.widget.SimpleAdapter;
-//import android.widget.SimpleCursorAdapter;
-//import android.widget.TextView;
-//import android.widget.Toast;
 
 
+// Für Tabs benötigt
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.os.Bundle;
 // ALEX: Fürs Layout hinzugefügt
 //import android.content.Intent;
 //import android.os.Bundle;
+import android.os.StrictMode;
 import android.widget.TabHost;
-import android.widget.TabHost.TabContentFactory;
-//import android.widget.TabHost.TabSpec;
+
+// Für den ContenResolver zum laden der Kontakte auf dem phone
+import android.content.ContentResolver;
+import android.widget.Toast;
+
+// Wird für button benötigt
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+// Wird für RadioButtons benötigt
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.SimpleAdapter;
+
+// Wird für Spinner (ComboBox) benötigt
+import android.widget.Spinner;
+
+// Wird für das erzeugen eines Layouts benötigt
+import android.widget.LinearLayout;
+
+// Wird für das erstellen eines Menüs benötigt
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 
-public class MainActivity extends FragmentActivity implements TabHost.OnTabChangeListener
+import android.widget.TabHost;
+import android.widget.TabHost.TabSpec;
+
+
+
+//public class MainActivity extends FragmentActivity implements TabHost.OnTabChangeListener
+public class MainActivity extends TabActivity
 {
-	private TabHost m_TabHost;
-	private TabInfo m_LastTab = null;
-	private HashMap m_MapTabInfo = new HashMap();
-	
-	//private ArrayAdapter<String> m_ListAdapter = null;
-	
-	private class TabInfo 
-	{
-		private String tag;
-		private Class clss;
-		private Bundle args;
-		private Fragment fragment;
-		
-		TabInfo(String tag, Class clazz, Bundle args) 
-		{
-			tag = tag;
-			clss = clazz;
-			args = args;
-		}
-	}	
-	
-	 class TabFactory implements TabContentFactory 
-	 {
-		 private final Context m_Context;
-		 /**
-		  * @param context
-		  */
-		 public TabFactory(Context context) 
-		 {
-			 m_Context = context;
-		 }
-		 
-		 /** (non-Javadoc)
-		 * @see android.widget.TabHost.TabContentFactory#createTabContent(java.lang.String)
-		 */
-		 public View createTabContent(String tag) 
-		 {
-			 View v = new View(m_Context);
-			 v.setMinimumWidth(0);
-			 v.setMinimumHeight(0);
-			 return v;
-		 }
-	 }	
-	
+
+    @Override
     public void onCreate(Bundle savedInstanceState) 
     {
         super.onCreate(savedInstanceState);
-        
-        // Step 1: Inflate layout
         setContentView(R.layout.activity_main);
-        // Step 2: Setup TabHost
-        initialiseTabHost(savedInstanceState);
-        if (savedInstanceState != null) 
-        {
-        	//set the tab as per the saved state        	
-        	m_TabHost.setCurrentTabByTag(savedInstanceState.getString("tab")); 
-        }        
-       
+         
         
-        // statt Layout werden weitere Funktionen aufgerufen, siehe Methodeninhalt
-        //displaySharedPreferences();
- 
+        
+        // Erzeugt die Tabs
+        //--------------------------
+        
+        TabHost tabHost = getTabHost();
+         
+        // Tab für die Kontakte
+        TabSpec contactspec = tabHost.newTabSpec("Contacts");
+        // Setze den Titel und das Icon
+        contactspec.setIndicator("Contacts", getResources().getDrawable(R.drawable.kontakte48x48px));
+        Intent contactsIntent = new Intent(this, LayoutKontakteActivity.class);
+        contactspec.setContent(contactsIntent);
+         
+        
+        // Tab für die empfangenen Nachrichten
+        TabSpec receivedspec = tabHost.newTabSpec("Received");       
+        receivedspec.setIndicator("Received", getResources().getDrawable(R.drawable.kontakte48x48px));
+        Intent receivedIntent = new Intent(this, LayoutReceivedActivity.class);
+        receivedspec.setContent(receivedIntent);
+         
+        
+        // Tab für die gesendeten Nachrichten
+        TabSpec sentspec = tabHost.newTabSpec("Sent");
+        sentspec.setIndicator("Sent", getResources().getDrawable(R.drawable.kontakte48x48px));
+        Intent sentIntent = new Intent(this, LayoutSentActivity.class);
+        sentspec.setContent(sentIntent);
+         
+        
+        
+        // Für die TabSpec dem TabHost hinzu
+        tabHost.addTab(contactspec);
+        tabHost.addTab(receivedspec);
+        tabHost.addTab(sentspec);
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) 
-    {
-    	outState.putString("tab", m_TabHost.getCurrentTabTag()); 
-		super.onSaveInstanceState(outState);
-    }    
-    
-    private void initialiseTabHost(Bundle savedInstanceState)
-    {
-        // ALEX: Aufruf der Tabs
-    	m_TabHost = (TabHost)findViewById(android.R.id.tabhost);
-    	m_TabHost.setup();    	
-
-    	TabInfo tabInfo = null;
-    	MainActivity.addTab(this, this.m_TabHost, m_TabHost.newTabSpec("CONTACTS").setIndicator("Contacts"), ( tabInfo = new TabInfo("Contacts", LayoutKontakteActivity.class, savedInstanceState)));
-    	m_MapTabInfo.put(tabInfo.tag, tabInfo);
-    	MainActivity.addTab(this, this.m_TabHost, m_TabHost.newTabSpec("SENT").setIndicator("Sent"), ( tabInfo = new TabInfo("Sent", LayoutSendedActivity.class, savedInstanceState)));
-    	m_MapTabInfo.put(tabInfo.tag, tabInfo);
-    	MainActivity.addTab(this, this.m_TabHost, m_TabHost.newTabSpec("RECEIVED").setIndicator("Received"), ( tabInfo = new TabInfo("Received", LayoutReceivedActivity.class, savedInstanceState)));
-    	m_MapTabInfo.put(tabInfo.tag, tabInfo);
-    	// Default to first tab
-    	this.onTabChanged("Contacts");
-    	//
-    	m_TabHost.setOnTabChangedListener(this);    	
-    	
-    	
-//    	
-//    	
-//        // Tab for Contacts
-//        //-------------------------------
-//        TabSpec contactspec = m_TabHost.newTabSpec("CONTACTS");
-//        // setting Title and Icon for the Tab
-//        contactspec.setIndicator("CONTACTS", getResources().getDrawable(R.drawable.kontakte48x48px));
-//        Intent photosIntent = new Intent(this, LayoutKontakteActivity.class);
-//        contactspec.setContent(photosIntent);
-// 
-//        // Tab for Sended Messages
-//        //--------------------------------
-//        TabSpec sendedspec = tabHost.newTabSpec("SENDED");
-//        sendedspec.setIndicator("SENDED", getResources().getDrawable(R.drawable.kontakte48x48px));
-//        Intent songsIntent = new Intent(this, LayoutSendedActivity.class);
-//        sendedspec.setContent(songsIntent);
-//        
-//        // Tab for Received Messages
-//        //---------------------------------
-//        TabSpec receivedspec = tabHost.newTabSpec("RECEIVED");
-//        receivedspec.setIndicator("RECEIVED", getResources().getDrawable(R.drawable.kontakte48x48px));
-//        Intent videosIntent = new Intent(this, LayoutReceivedActivity.class);
-//        receivedspec.setContent(videosIntent);
-//         
-//        // Adding all TabSpec to TabHost
-//        tabHost.addTab(contactspec); // Adding contacts tab
-//        tabHost.addTab(sendedspec); // Adding sent Messages tab
-//        tabHost.addTab(receivedspec); // Adding received Messages tab
-    }
-    
-    private static void addTab(MainActivity activity, TabHost tabHost, TabHost.TabSpec tabSpec, TabInfo tabInfo) 
-    {
-    	// Attach a Tab view factory to the spec
-    	tabSpec.setContent(activity.new TabFactory(activity));
-    	String tag = tabSpec.getTag();
-    	
-    	// Check to see if we already have a fragment for this tab, probably
-    	// from a previously saved state.  If so, deactivate it, because our
-    	// initial state is that a tab isn't shown.
-    	tabInfo.fragment = activity.getSupportFragmentManager().findFragmentByTag(tag);
-    	if (tabInfo.fragment != null && !tabInfo.fragment.isDetached()) 
-    	{
-    		FragmentTransaction ft = activity.getSupportFragmentManager().beginTransaction();
-    		ft.detach(tabInfo.fragment);
-    		ft.commit();
-    		activity.getSupportFragmentManager().executePendingTransactions();
-    	}
-    	tabHost.addTab(tabSpec);
-    }    
-    
-    // Neu erzeugter Layout aufruf statt diesen siehe oben beim start aufzurufen
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_main, menu);
-        return true;
-    }
-        
-    @Override  
-    public boolean onOptionsItemSelected(MenuItem item) {  
-        switch(item.getItemId())
-        {  
-        case R.id.menu_settings:
-        	startPrefs();
-            break;  
-        case R.id.exit:  
-            finish();  
-            break;  
-        }  
-        return false;  
-    }      
-    
-    private void startPrefs()
-    {
-		Intent intent = new Intent(WhereAppYouApplication.getAppContext(), WhereAppYouPrefsActivity.class);
-		int requestCode = 0; 
-		startActivityForResult(intent, requestCode);
-		// ALEX: Erstmal weggelassen//displaySharedPreferences();
-    }
-        
-    
-    
-    // ALEX: Testweise weggelassen
-    /*
-    // folgendes wird beim starten der App ausgeführt
-    private void displaySharedPreferences() 
-    {
-    	
-    	ArrayList<Map<String, String>> list = buildData();
-    	
-    	String[] from = { "name", "purpose" };
-    	
-    	int[] to = { android.R.id.text1, android.R.id.text2 };
-
-    	SimpleAdapter adapter = new SimpleAdapter(this, list, android.R.layout.simple_list_item_2, from, to);    	
-    	
-        setListAdapter(adapter);        
-        
-        adapter.notifyDataSetChanged();
-        
-        
-// 	   	long minTime = prefs.getLong("locMinTime", 5 * 60 * 1000); 
-// 	   	float minDistance = prefs.getFloat("locMinDistance", 10);
-    }
-    */
-    
-    
-    private ArrayList<Map<String, String>> buildData() 
-    {
-    	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(WhereAppYouApplication.getAppContext());
-    	
-        boolean incognitoMode = prefs.getBoolean("incognitoMode", false);      
-        boolean voiceNotifications = prefs.getBoolean("voiceNotifications", false);
-        boolean onlyFavs = prefs.getBoolean("onlyFavs", true);
-        boolean respWhenLocAvailable = prefs.getBoolean("respWhenLocAvailable", false);        
-        boolean notifyWhenLocked = prefs.getBoolean("notifyWhenLocked", false);
-        
-        
-        ArrayList<Map<String, String>> list = new ArrayList<Map<String, String>>();
-        
-        String _msgTemplate = "%s (%s)";
-        
-        list.add(putData(String.format(_msgTemplate, getString(R.string.respWhenLocAvailable_label), String.valueOf(respWhenLocAvailable)), getString(R.string.respWhenLocAvailable_txt)));
-        list.add(putData(String.format(_msgTemplate, getString(R.string.incognitomode_label), String.valueOf(incognitoMode)), getString(R.string.incognitomode_txt)));
-        list.add(putData(String.format(_msgTemplate, getString(R.string.voiceNotifications_label), String.valueOf(voiceNotifications)), getString(R.string.voiceNotifications_txt)));
-        list.add(putData(String.format(_msgTemplate, getString(R.string.onlyFavs_label), String.valueOf(onlyFavs)), getString(R.string.onlyFavs_txt)));
-        list.add(putData(String.format(_msgTemplate, getString(R.string.notifyWhenLocked_label), String.valueOf(notifyWhenLocked)), getString(R.string.notifyWhenLocked_txt)));
-        
-        return list;
-      }    
-    
     private HashMap<String, String> putData(String name, String purpose) 
     {
         HashMap<String, String> item = new HashMap<String, String>();
@@ -282,43 +138,76 @@ public class MainActivity extends FragmentActivity implements TabHost.OnTabChang
       }
 
 
+
+
+	// Erzeuge ein Menü für den Aufruf der Einstellungen
+    //--------------------------------------------------------
 	@Override
-	public void onTabChanged(String tabId) 
+	public boolean onCreateOptionsMenu(Menu menu) 
 	{
-	    TabInfo newTab = (TabInfo)m_MapTabInfo.get(tabId);
-	    if (m_LastTab != newTab) 
-	    {
-	    	FragmentTransaction ft = this.getSupportFragmentManager().beginTransaction();
-	    	if (m_LastTab != null) 
-	    	{
-	    		if (m_LastTab.fragment != null) 
-	    		{
-	    			ft.detach(m_LastTab.fragment);
-	    		}
-	    	}
-		    if (newTab != null) 
-		    {
-		    	if (newTab.fragment == null) 
-		    	{
-		    		newTab.fragment = Fragment.instantiate(this, newTab.clss.getName(), newTab.args);
-		    		ft.add(R.id.realtabcontent, newTab.fragment, newTab.tag);
-		    	} 
-		    	else 
-		    	{
-		    		ft.attach(newTab.fragment);
-		    	}
-		    }
-		    m_LastTab = newTab;
-		    ft.commit();
-		    getSupportFragmentManager().executePendingTransactions();
-	    }		
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.activity_main, menu);
+		return true;
+	}
+	
+	// Aufruf der einzelnen Menüpunkte
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) 
+	{
+
+		Intent intent = null;
+		
+		switch (item.getItemId()) 
+		{
+			case R.id.settings:
+				intent = new Intent(WhereAppYouApplication.getAppContext(), WhereAppYouPrefsActivity.class);
+				startActivity(intent);
+				return true;
+			
+		    case R.id.refresh:
+		         Toast.makeText(WhereAppYouApplication.getAppContext(), "Aktualisiert", Toast.LENGTH_SHORT).show();
+		         //this.reload();
+		         intent = new Intent(WhereAppYouApplication.getAppContext(), MainActivity.class);
+		         startActivity(intent);
+		         return true;
+		         
+		    case R.id.addcontact:
+		         Toast.makeText(WhereAppYouApplication.getAppContext(), "Kontakte ausgewählt", Toast.LENGTH_SHORT).show();
+		         //addContact();
+		         return true;
+			
+			default:
+				return super.onOptionsItemSelected(item);
+		}
 	}
     
-//    @Override
-//    protected void onListItemClick(ListView l, View v, int position, long id) 
-//    {
-//    	String item = (String) getListAdapter().getItem(position);
-//    	Toast.makeText(this, item + " selected", Toast.LENGTH_LONG).show();
-//    }    
     
+	
+//	private void addContact()
+//	{
+//		
+//		// Add listener so your activity gets called back upon completion of action,
+//		// in this case with ability to get handle to newly added contact
+//		this.addActivityListener(someActivityListener);
+//
+//		Intent intent = new Intent(Intent.ACTION_INSERT);
+//		intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+//
+//		// Just two examples of information you can send to pre-fill out data for the
+//		// user.  See android.provider.ContactsContract.Intents.Insert for the complete
+//		// list.
+//		intent.putExtra(ContactsContract.Intents.Insert.NAME, "some Contact Name");
+//		intent.putExtra(ContactsContract.Intents.Insert.PHONE, "some Phone Number");
+//
+//		// Send with it a unique request code, so when you get called back, you can
+//		// check to make sure it is from the intent you launched (ideally should be
+//		// some public static final so receiver can check against it)
+//		int PICK_CONTACT = 100;
+//		this.startActivityForResult(intent, PICK_CONTACT);
+//		
+//		
+//
+//		
+//	}
+	
 }
