@@ -16,7 +16,7 @@
 		
 	<string name="menusettings_label">Settings</string>
 	<string name="menusexit_label">Exit</string>
-	
+
 	<string name="miscsettings_label">Other Settings</string>
 	<string name="locsettings_label">Location Preferences</string>
 	
@@ -29,4 +29,13 @@
 	<string name="messageDeliveredTo_txt">Message Sent to</string>
 	<string name="messageNotDeliveredTo_txt">Message not delivered to</string>
 	<string name="messageWithProblems_txt">Problems creating Message to deliver</string>
+	
+    <string name="title_activity_main">MainActivity</string>
+    
+    <string name="menu_seite1">Settings</string>
+    <string name="contact">Contacts</string>
+    <string name="search">Refresh</string>
+    <string name="refresh">Refresh</string>
+	
+	
 </resources>
