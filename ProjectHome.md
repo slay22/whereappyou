@@ -1,0 +1,1 @@
+WhereAppYou its intended to share a GPS location upon requests with an SMS to the "caller" which contains a link to visualize it on Google Maps.
